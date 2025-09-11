@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from typing import Iterable, Iterator
 
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit, JsonRecord
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit, JsonRecord
 
 
 def to_json_records(captions: Iterable[CaptionUnit]) -> Iterator[JsonRecord]:

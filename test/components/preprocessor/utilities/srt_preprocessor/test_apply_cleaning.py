@@ -1,5 +1,5 @@
-from components.preprocessor.utilities.srt_preprocessor.apply_cleaning import clean_and_collapse_captions
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.apply_cleaning import clean_and_collapse_captions
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
 
 
 def test_clean_and_collapse_captions_basic():

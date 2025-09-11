@@ -211,3 +211,18 @@ data/the.lord.of.the.rings.the.return.of.the.king.(2003).eng.1cd.(6256239)/the.l
 data/the.lord.of.the.rings.the.return.of.the.king.(2003).eng.1cd.(6256239)/The.Lord.of.the.Rings.The.Return.of.the.King.EXTENDED.2003.720p.BrRip.x264.BOKUTOX.YIFY.Perusoe.srt
 data/the.lord.of.the.rings.the.two.towers.(2002).eng.1cd.(5581877)/the.lord.of.the.rings.the.two.(5581877).nfo
 data/the.lord.of.the.rings.the.two.towers.(2002).eng.1cd.(5581877)/The.Lord.of.the.Rings.The.Two.Towers.Extended.Editions.2002.1080p.BluRay.x264.DTS-WiKi .srt
+models/chunker/mxbai-embed-large-v1/model.safetensors
+models/chunker/qwen3-embedding-0.6B/config_sentence_transformers.json
+models/chunker/qwen3-embedding-0.6B/config.json
+models/chunker/qwen3-embedding-0.6B/generation_config.json
+models/chunker/qwen3-embedding-0.6B/model.safetensors
+models/chunker/qwen3-embedding-0.6B/modules.json
+models/chunker/qwen3-embedding-0.6B/tokenizer_config.json
+models/chunker/qwen3-embedding-0.6B/tokenizer.json
+models/chunker/qwen3-embedding-0.6B/vocab.json
+models/chunker/qwen3-embedding-0.6B/1_Pooling/config (1).json
+models/chunker/qwen3-embedding-0.6B/1_Pooling/config.json
+models/chunker/qwen3-embedding-0.6B/2_Normalize/config.json
+documentation/future_development.md
+documentation/qwen.md
+documentation/sprint_planning.md

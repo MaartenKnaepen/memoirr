@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Iterable, List
 
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
-from components.preprocessor.utilities.srt_preprocessor.clean_lines import clean_caption_lines
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.clean_lines import clean_caption_lines
 
 
 def clean_and_collapse_captions(captions: Iterable[CaptionUnit]) -> List[CaptionUnit]:

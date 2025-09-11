@@ -1,4 +1,4 @@
-from components.preprocessor.utilities.srt_preprocessor.srt_processing import srt_preprocess_text
+from src.components.preprocessor.utilities.srt_preprocessor.srt_processing import srt_preprocess_text
 
 
 def test_srt_preprocess_text_end_to_end_counts():

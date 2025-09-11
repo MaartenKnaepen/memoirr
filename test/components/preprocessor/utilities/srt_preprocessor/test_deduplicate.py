@@ -1,5 +1,5 @@
-from components.preprocessor.utilities.srt_preprocessor.deduplicate import deduplicate_nearby
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.deduplicate import deduplicate_nearby
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
 
 
 def test_deduplicate_nearby_drops_duplicates_within_window():

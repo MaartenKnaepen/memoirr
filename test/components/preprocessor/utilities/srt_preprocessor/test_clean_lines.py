@@ -1,4 +1,4 @@
-from components.preprocessor.utilities.srt_preprocessor.clean_lines import clean_caption_lines
+from src.components.preprocessor.utilities.srt_preprocessor.clean_lines import clean_caption_lines
 
 
 def test_clean_caption_lines_strips_tags_and_cues_and_dashes():

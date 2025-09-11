@@ -11,13 +11,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterator, List
 
-from components.preprocessor.utilities.srt_preprocessor.apply_cleaning import clean_and_collapse_captions
-from components.preprocessor.utilities.srt_preprocessor.deduplicate import deduplicate_nearby
-from components.preprocessor.utilities.srt_preprocessor.drop_empty import drop_empty_or_noise
-from components.preprocessor.utilities.srt_preprocessor.language_filter import filter_english_captions
-from components.preprocessor.utilities.srt_preprocessor.parse_srt import parse_srt_text
-from components.preprocessor.utilities.srt_preprocessor.to_jsonl import to_jsonl_lines
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit, CleanStats
+from src.components.preprocessor.utilities.srt_preprocessor.apply_cleaning import clean_and_collapse_captions
+from src.components.preprocessor.utilities.srt_preprocessor.deduplicate import deduplicate_nearby
+from src.components.preprocessor.utilities.srt_preprocessor.drop_empty import drop_empty_or_noise
+from src.components.preprocessor.utilities.srt_preprocessor.language_filter import filter_english_captions
+from src.components.preprocessor.utilities.srt_preprocessor.parse_srt import parse_srt_text
+from src.components.preprocessor.utilities.srt_preprocessor.to_jsonl import to_jsonl_lines
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit, CleanStats
 
 
 def srt_preprocess_text(

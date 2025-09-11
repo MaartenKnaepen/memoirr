@@ -1,7 +1,7 @@
 import json
 
-from components.preprocessor.utilities.srt_preprocessor.to_jsonl import to_jsonl_lines
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.to_jsonl import to_jsonl_lines
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
 
 
 def test_to_jsonl_lines_emits_expected_fields():

@@ -4,5 +4,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
-if SRC.exists():
-    sys.path.insert(0, str(SRC))
+# Ensure repository root is on sys.path so absolute imports like `src.*` resolve
+if ROOT.exists():
+    sys.path.insert(0, str(ROOT))

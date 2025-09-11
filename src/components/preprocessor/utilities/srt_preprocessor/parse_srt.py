@@ -8,8 +8,8 @@ from typing import List
 
 import srt
 
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
-from components.preprocessor.utilities.srt_preprocessor.exceptions import SRTParseError
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.exceptions import SRTParseError
 
 
 def parse_srt_text(srt_text: str) -> List[CaptionUnit]:

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Iterable, List
 
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
 
 def is_english_text_heuristic(text: str) -> bool:
     """Return True if text appears to be English via a simple ASCII heuristic.

@@ -1,4 +1,4 @@
-from components.preprocessor.srt_preprocessor import SRTPreprocessor
+from src.components.preprocessor.srt_preprocessor import SRTPreprocessor
 
 
 def test_srt_preprocessor_component_runs_and_outputs_jsonl_and_stats():

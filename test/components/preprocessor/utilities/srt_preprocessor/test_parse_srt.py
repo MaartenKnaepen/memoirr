@@ -1,4 +1,4 @@
-from components.preprocessor.utilities.srt_preprocessor.parse_srt import parse_srt_text
+from src.components.preprocessor.utilities.srt_preprocessor.parse_srt import parse_srt_text
 
 
 def test_parse_srt_basic():

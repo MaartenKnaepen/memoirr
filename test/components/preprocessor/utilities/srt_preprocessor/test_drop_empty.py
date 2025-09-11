@@ -1,5 +1,5 @@
-from components.preprocessor.utilities.srt_preprocessor.drop_empty import drop_empty_or_noise
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.drop_empty import drop_empty_or_noise
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
 
 
 def test_drop_empty_or_noise():

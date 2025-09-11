@@ -17,8 +17,8 @@ from typing import Dict, List
 
 from haystack import component
 
-from components.preprocessor.utilities.srt_preprocessor.srt_processing import srt_preprocess_text
-from components.preprocessor.utilities.srt_preprocessor.to_jsonl import (
+from src.components.preprocessor.utilities.srt_preprocessor.srt_processing import srt_preprocess_text
+from src.components.preprocessor.utilities.srt_preprocessor.to_jsonl import (
     to_jsonl_lines,
 )
 
@@ -32,9 +32,11 @@ class SRTPreprocessor:
         dedupe_window_ms: Time window in milliseconds for near-duplicate removal.
     """
 
-    def __init__(self, *, min_len: int = 1, dedupe_window_ms: int = 1000) -> None:
-        self.min_len = min_len
-        self.dedupe_window_ms = dedupe_window_ms
+    def __init__(self, *, min_len: int | None = None, dedupe_window_ms: int | None = None) -> None:
+        from src.core.config import get_settings
+        settings = get_settings()
+        self.min_len = min_len if min_len is not None else settings.pre_min_len
+        self.dedupe_window_ms = dedupe_window_ms if dedupe_window_ms is not None else settings.pre_dedupe_window_ms
 
     @component.output_types(jsonl_lines=list, stats=dict)
     def run(self, srt_text: str) -> Dict[str, object]:  # type: ignore[override]

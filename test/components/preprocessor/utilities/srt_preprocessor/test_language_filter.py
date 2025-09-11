@@ -1,5 +1,5 @@
-from components.preprocessor.utilities.srt_preprocessor.language_filter import filter_english_captions
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.language_filter import filter_english_captions
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
 
 
 def test_filter_english_captions_keeps_english_drops_non_english():

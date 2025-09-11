@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Iterable, List
 
-from components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
+from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit
 
 
 def drop_empty_or_noise(captions: Iterable[CaptionUnit], *, min_len: int = 1) -> List[CaptionUnit]:
