@@ -99,7 +99,9 @@ class _LocalEmbeddings(BaseEmbeddings):
                 summed = (out.last_hidden_state * attn).sum(dim=1)
                 counts = attn.sum(dim=1).clamp(min=1)
                 emb = summed / counts
-                emb = normalize(emb, p=2, dim=1)
+                from src.core.config import get_settings
+                settings = get_settings()
+                emb = normalize(emb, p=settings.l2_norm_p_value, dim=settings.embedding_normalization_dim)
             all_vecs.append(emb.cpu().numpy())
         return np.concatenate(all_vecs, axis=0)
 
@@ -170,8 +172,11 @@ def _coerce_threshold(value) -> float:
         raise ValueError(f"Unsupported threshold type: {type(value)}")
 
     # Interpret percentages
-    if f > 1 and f <= 100:
-        f = f / 100.0
+    from src.core.config import get_settings
+    settings = get_settings()
+    
+    if f > settings.min_percentile_threshold and f <= settings.max_percentile_threshold:
+        f = f / settings.percentile_to_decimal_divisor
     if not (0 < f < 1):
         raise ValueError(f"threshold must be between 0 and 1, got {value}")
     return f

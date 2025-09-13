@@ -3,8 +3,6 @@
 Loads environment variables (including from a .env file) and provides
 centralized access for components and utilities.
 """
-from __future__ import annotations
-
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
@@ -31,11 +29,28 @@ class Settings(BaseSettings):
         - CHUNK_INCLUDE_CAPTION_INDICES: bool; default True.
         - CHUNK_FAIL_FAST: bool; default True.
 
+        Language detection configuration:
+        - ENGLISH_ASCII_THRESHOLD: float; default 0.95 (95% ASCII required for English detection).
+        - ASCII_CHAR_UPPER_LIMIT: int; default 128 (standard ASCII character limit).
+
+        Time conversion configuration:
+        - SECONDS_TO_MILLISECONDS_FACTOR: int; default 1000 (conversion factor from seconds to milliseconds).
+
+        Chunker threshold configuration:
+        - MIN_PERCENTILE_THRESHOLD: int; default 1 (minimum valid percentile).
+        - MAX_PERCENTILE_THRESHOLD: int; default 100 (maximum valid percentile).
+        - PERCENTILE_TO_DECIMAL_DIVISOR: float; default 100.0 (convert percentile to decimal).
+
+        Embedding normalization configuration:
+        - L2_NORM_P_VALUE: int; default 2 (p-value for L2 normalization).
+        - EMBEDDING_NORMALIZATION_DIM: int; default 1 (dimension for normalization).
+        - EMBEDDING_DIMENSION_FALLBACK: int; default 1024 (fallback when EMBEDDING_DIMENSION not set).
+
         Qdrant configuration:
-        - QDRANT_URL: string; default ":memory:" for in-memory storage.
-        - QDRANT_COLLECTION: string; default "documents".
+        - QDRANT_URL: string; default "http://localhost:6300".
+        - QDRANT_COLLECTION: string; default "memoirr".
         - QDRANT_RECREATE_INDEX: bool; default True.
-        - QDRANT_RETURN_EMBEDDING: bool; default False.
+        - QDRANT_RETURN_EMBEDDING: bool; default True.
         - QDRANT_WAIT_RESULT: bool; default True.
     """
 
@@ -44,6 +59,25 @@ class Settings(BaseSettings):
     )
     device: str | None = Field(default=None, alias="EMBEDDING_DEVICE")
     embedding_dimension: int | None = Field(default=None, alias="EMBEDDING_DIMENSION")
+
+    # Language detection constants
+    english_ascii_threshold: float = Field(default=0.95, alias="ENGLISH_ASCII_THRESHOLD")
+    ascii_char_upper_limit: int = Field(default=128, alias="ASCII_CHAR_UPPER_LIMIT")
+
+    # Time conversion constants
+    seconds_to_milliseconds_factor: int = Field(default=1000, alias="SECONDS_TO_MILLISECONDS_FACTOR")
+
+    # Chunker threshold constants
+    min_percentile_threshold: int = Field(default=1, alias="MIN_PERCENTILE_THRESHOLD")
+    max_percentile_threshold: int = Field(default=100, alias="MAX_PERCENTILE_THRESHOLD") 
+    percentile_to_decimal_divisor: float = Field(default=100.0, alias="PERCENTILE_TO_DECIMAL_DIVISOR")
+
+    # Embedding normalization constants
+    l2_norm_p_value: int = Field(default=2, alias="L2_NORM_P_VALUE")
+    embedding_normalization_dim: int = Field(default=1, alias="EMBEDDING_NORMALIZATION_DIM")
+
+    # Embedding fallback (should be avoided - prefer explicit EMBEDDING_DIMENSION)
+    embedding_dimension_fallback: int = Field(default=1024, alias="EMBEDDING_DIMENSION_FALLBACK")
 
     # Chunker settings
     chunk_threshold: str = Field(default="auto", alias="CHUNK_THRESHOLD")
@@ -63,10 +97,10 @@ class Settings(BaseSettings):
     pre_dedupe_window_ms: int = Field(default=1000, alias="PRE_DEDUPE_WINDOW_MS")
 
     # Qdrant settings
-    qdrant_url: str = Field(default=":memory:", alias="QDRANT_URL")
-    qdrant_collection: str = Field(default="documents", alias="QDRANT_COLLECTION")
+    qdrant_url: str = Field(default="http://localhost:6300", alias="QDRANT_URL")
+    qdrant_collection: str = Field(default="memoirr", alias="QDRANT_COLLECTION")
     qdrant_recreate_index: bool = Field(default=True, alias="QDRANT_RECREATE_INDEX")
-    qdrant_return_embedding: bool = Field(default=False, alias="QDRANT_RETURN_EMBEDDING")
+    qdrant_return_embedding: bool = Field(default=True, alias="QDRANT_RETURN_EMBEDDING")
     qdrant_wait_result: bool = Field(default=True, alias="QDRANT_WAIT_RESULT")
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="", extra="ignore")

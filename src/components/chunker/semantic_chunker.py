@@ -11,7 +11,7 @@ Adheres to Memoirr code standards: type hints, Google-style docstrings, SRP.
 
 
 from haystack import component
-from typing import Dict, List, Optional
+from typing import List, Optional
 from src.components.chunker.utilities.semantic_chunker import orchestrate_chunking as orchestrate_module
 
 
@@ -80,7 +80,7 @@ class SemanticChunker:
         self.fail_fast = fail_fast if fail_fast is not None else settings.chunk_fail_fast
 
     @component.output_types(chunk_lines=List[str], stats=dict)
-    def run(self, jsonl_lines: list) -> dict[str, object]:  # type: ignore[override]
+    def run(self, jsonl_lines: List[str]) -> dict[str, object]:  # type: ignore[override]
             """Run semantic chunking on cleaned caption JSONL lines.
 
             Args:

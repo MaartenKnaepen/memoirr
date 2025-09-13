@@ -31,8 +31,11 @@ def parse_srt_text(srt_text: str) -> List[CaptionUnit]:
 
     units: List[CaptionUnit] = []
     for sub in subs:
-        start_ms = int(sub.start.total_seconds() * 1000)
-        end_ms = int(sub.end.total_seconds() * 1000)
+        from src.core.config import get_settings
+        settings = get_settings()
+        
+        start_ms = int(sub.start.total_seconds() * settings.seconds_to_milliseconds_factor)
+        end_ms = int(sub.end.total_seconds() * settings.seconds_to_milliseconds_factor)
         # Split on any newline to preserve original lines separate from timecodes
         lines = [line for line in str(sub.content).splitlines() if line.strip()]
         units.append(

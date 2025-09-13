@@ -17,7 +17,7 @@ Outputs:
 from haystack import component
 from haystack.dataclasses.document import Document
 from haystack_integrations.document_stores.qdrant import QdrantDocumentStore
-
+from typing import Any, Dict, List
 from src.core.config import get_settings
 
 
@@ -40,18 +40,45 @@ class QdrantWriter:
         self._store = QdrantDocumentStore(**kwargs)
 
     @component.output_types(stats=dict)
-    def run(self, documents: list[dict]) -> dict[str, object]:  # type: ignore[override]
+    def run(self, documents: List[Dict[str, Any]] ) -> dict[str, object]:  # type: ignore[override]
         """Write documents to Qdrant.
 
         Args:
             documents: list of dicts; each dict should have content, embedding, and optional meta
         """
-        docs: list[Document] = []
-        for d in documents:
-            content = d.get("content")
-            embedding = d.get("embedding")
-            meta = d.get("meta", None)
-            docs.append(Document(content=content, embedding=embedding, meta=meta))
+        docs: List[Document] = []
+        skipped = 0
+        
+        for i, d in enumerate(documents):
+            try:
+                content = d.get("content")
+                embedding = d.get("embedding")
+                meta = d.get("meta", None)
+                
+                # Validate required fields
+                if not content:
+                    print(f"Warning: Document {i} missing content, skipping")
+                    skipped += 1
+                    continue
+                    
+                if not embedding or not isinstance(embedding, list):
+                    print(f"Warning: Document {i} missing or invalid embedding, skipping")
+                    skipped += 1
+                    continue
+                
+                docs.append(Document(content=content, embedding=embedding, meta=meta))
+            except Exception as e:
+                print(f"Warning: Failed to process document {i}: {e}")
+                skipped += 1
+                continue
+        
+        written_count = 0
         if docs:
-            self._store.write_documents(docs)
-        return {"stats": {"written": len(docs)}}
+            try:
+                self._store.write_documents(docs)
+                written_count = len(docs)
+            except Exception as e:
+                print(f"Error writing documents to Qdrant: {e}")
+                raise
+        
+        return {"stats": {"written": written_count, "skipped": skipped, "total": len(documents)}}

@@ -11,16 +11,19 @@ from src.components.preprocessor.utilities.srt_preprocessor.types import Caption
 def is_english_text_heuristic(text: str) -> bool:
     """Return True if text appears to be English via a simple ASCII heuristic.
 
-    We treat a line as English if at least ~95% of its characters are ASCII.
+    We treat a line as English if at least the configured threshold of its characters are ASCII.
     This is a pragmatic default for SRTs assumed to be English, while
     effectively filtering out bilingual lines with non-Latin diacritics.
     """
     if not text or not text.strip():
         return False
 
-    ascii_chars = sum(1 for ch in text if ord(ch) < 128)
+    from src.core.config import get_settings
+    settings = get_settings()
+    
+    ascii_chars = sum(1 for ch in text if ord(ch) < settings.ascii_char_upper_limit)
     ratio = ascii_chars / max(1, len(text))
-    return ratio >= 0.95
+    return ratio >= settings.english_ascii_threshold
 
 
 def filter_english_captions(captions: Iterable[CaptionUnit]) -> List[CaptionUnit]:

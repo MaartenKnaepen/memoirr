@@ -43,8 +43,8 @@ class ChunkJsonlToTexts:
         for line in chunk_lines:
             try:
                 obj = json.loads(line)
-            except Exception:
-                # Skip invalid JSONL lines instead of failing the whole pipeline
+            except json.JSONDecodeError:
+                # Skip invalid JSON lines instead of failing the whole pipeline
                 continue
             text = obj.get("text")
             if not isinstance(text, str):
