@@ -8,7 +8,7 @@ that is loaded from a local folder indicated by an environment variable.
 
 Adheres to Memoirr code standards: type hints, Google-style docstrings, SRP.
 """
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 from haystack import component
 
@@ -44,8 +44,8 @@ class SemanticChunker:
         similarity_window: int | None = None,
         min_sentences: int | None = None,
         min_characters_per_sentence: int | None = None,
-        delim: List[str] | str | None = None,
-        include_delim: Optional[str] | None = None,
+        delim: list[str] | str | None = None,
+        include_delim: str | None = None,
         skip_window: int | None = None,
         include_params: bool | None = None,
         include_caption_indices: bool | None = None,
@@ -80,7 +80,7 @@ class SemanticChunker:
         self.fail_fast = fail_fast if fail_fast is not None else settings.chunk_fail_fast
 
     @component.output_types(chunk_lines=list, stats=dict)
-    def run(self, jsonl_lines: list) -> Dict[str, object]:  # type: ignore[override]
+    def run(self, jsonl_lines: list) -> dict[str, object]:  # type: ignore[override]
         """Run semantic chunking on cleaned caption JSONL lines.
 
         Args:

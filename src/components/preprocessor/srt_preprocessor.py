@@ -10,10 +10,7 @@ It follows Haystack's custom component requirements:
 Note: This focuses on text input. If you prefer file inputs, you can wrap
 file reading outside the pipeline or extend the component as needed.
 """
-from __future__ import annotations
-
 from dataclasses import asdict
-from typing import Dict, List
 
 from haystack import component
 
@@ -39,7 +36,7 @@ class SRTPreprocessor:
         self.dedupe_window_ms = dedupe_window_ms if dedupe_window_ms is not None else settings.pre_dedupe_window_ms
 
     @component.output_types(jsonl_lines=list, stats=dict)
-    def run(self, srt_text: str) -> Dict[str, object]:  # type: ignore[override]
+    def run(self, srt_text: str) -> dict[str, object]:  # type: ignore[override]
         """Run the SRT preprocessing on raw SRT text.
 
         Args:
@@ -53,5 +50,5 @@ class SRTPreprocessor:
         cleaned_caps, stats = srt_preprocess_text(
             srt_text, min_len=self.min_len, dedupe_window_ms=self.dedupe_window_ms
         )
-        lines: List[str] = list(to_jsonl_lines(cleaned_caps))
+        lines: list[str] = list(to_jsonl_lines(cleaned_caps))
         return {"jsonl_lines": lines, "stats": asdict(stats)}
