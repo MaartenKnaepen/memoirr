@@ -1,13 +1,10 @@
 import json
-
-from haystack import Pipeline
-
+from pathlib import Path
 from src.pipelines.srt_to_qdrant import build_srt_to_qdrant_pipeline
 
 
 def test_end_to_end_pipeline_writes_embedded_chunks(monkeypatch):
     # Patch chunker orchestrator to produce deterministic simple chunks
-    import src.components.chunker.semantic_chunker as chunk_mod
     from src.components.chunker.utilities.semantic_chunker import orchestrate_chunking as orch_mod
 
     def fake_orchestrate(jsonl_lines, **kwargs):
@@ -55,6 +52,10 @@ def test_end_to_end_pipeline_writes_embedded_chunks(monkeypatch):
             pass
 
     monkeypatch.setattr(embed_mod, "SentenceTransformersTextEmbedder", lambda *a, **k: FakeEmbedder())
+    
+    # Patch resolve_model_path in the embedder module where it's imported
+    from src.components.embedder import text_embedder
+    monkeypatch.setattr(text_embedder, "resolve_model_path", lambda x: Path("/fake/model/path"))
 
     # Patch QdrantWriter store to capture docs instead of hitting Qdrant
     import src.components.writer.qdrant_writer as writer_mod

@@ -4,8 +4,10 @@ Loads environment variables (including from a .env file) and provides
 centralized access for components and utilities.
 """
 from functools import lru_cache
+from pathlib import Path
+from typing import List, Dict, Any, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -112,8 +114,320 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="", extra="ignore")
 
+    @field_validator('embedding_dimension')
+    @classmethod
+    def validate_embedding_dimension(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("EMBEDDING_DIMENSION must be positive")
+        return v
 
-@lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    """Return a cached Settings instance."""
-    return Settings()  # type: ignore[call-arg]
+    @field_validator('chunk_size')
+    @classmethod
+    def validate_chunk_size(cls, v):
+        if v <= 0:
+            raise ValueError("CHUNK_SIZE must be positive")
+        return v
+
+    @field_validator('chunk_similarity_window')
+    @classmethod
+    def validate_similarity_window(cls, v):
+        if v < 1:
+            raise ValueError("CHUNK_SIMILARITY_WINDOW must be at least 1")
+        return v
+
+    @field_validator('chunk_min_sentences')
+    @classmethod
+    def validate_min_sentences(cls, v):
+        if v < 1:
+            raise ValueError("CHUNK_MIN_SENTENCES must be at least 1")
+        return v
+
+    @field_validator('chunk_min_characters_per_sentence')
+    @classmethod
+    def validate_min_chars_per_sentence(cls, v):
+        if v < 1:
+            raise ValueError("CHUNK_MIN_CHARACTERS_PER_SENTENCE must be at least 1")
+        return v
+
+    @field_validator('english_ascii_threshold')
+    @classmethod
+    def validate_ascii_threshold(cls, v):
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("ENGLISH_ASCII_THRESHOLD must be between 0.0 and 1.0")
+        return v
+
+    @field_validator('ascii_char_upper_limit')
+    @classmethod
+    def validate_ascii_limit(cls, v):
+        if not 1 <= v <= 1114111:  # Valid Unicode range
+            raise ValueError("ASCII_CHAR_UPPER_LIMIT must be between 1 and 1114111")
+        return v
+
+    @field_validator('log_level')
+    @classmethod
+    def validate_log_level(cls, v):
+        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+        if v.upper() not in valid_levels:
+            raise ValueError(f"LOG_LEVEL must be one of: {', '.join(valid_levels)}")
+        return v.upper()
+
+    @field_validator('log_format')
+    @classmethod
+    def validate_log_format(cls, v):
+        valid_formats = ['json', 'console']
+        if v.lower() not in valid_formats:
+            raise ValueError(f"LOG_FORMAT must be one of: {', '.join(valid_formats)}")
+        return v.lower()
+
+    @field_validator('environment')
+    @classmethod
+    def validate_environment(cls, v):
+        valid_envs = ['development', 'staging', 'production']
+        if v.lower() not in valid_envs:
+            raise ValueError(f"ENVIRONMENT must be one of: {', '.join(valid_envs)}")
+        return v.lower()
+
+
+class MemoirrConfigError(Exception):
+    """Configuration error with helpful suggestions."""
+    def __init__(self, message: str, suggestions: Optional[List[str]] = None):
+        super().__init__(message)
+        self.suggestions = suggestions or []
+
+
+def validate_model_accessibility(settings: Settings) -> List[str]:
+    """Validate that the embedding model can be accessed."""
+    issues = []
+    
+    try:
+        from src.core.model_utils import resolve_model_path, find_model_candidates, validate_model_directory
+        
+        # Try to resolve the model path
+        try:
+            model_path = resolve_model_path(settings.embedding_model_name)
+            
+            # Validate the model directory structure
+            if not validate_model_directory(model_path):
+                issues.append(f"Model directory '{model_path}' exists but appears invalid (missing required files)")
+                
+        except FileNotFoundError:
+            # Model not found - provide helpful suggestions
+            candidates = find_model_candidates(settings.embedding_model_name)
+            if candidates:
+                suggestions = [f"  - {candidate}" for candidate in candidates[:3]]
+                issues.append(f"Model '{settings.embedding_model_name}' not found. Did you mean:\n" + "\n".join(suggestions))
+            else:
+                # Check if models directory exists
+                models_dir = Path("models")
+                if not models_dir.exists():
+                    issues.append(f"Model '{settings.embedding_model_name}' not found. Models directory 'models/' does not exist")
+                else:
+                    # List available models
+                    available = [p.name for p in models_dir.iterdir() if p.is_dir()]
+                    if available:
+                        suggestions = [f"  - {model}" for model in available[:5]]
+                        issues.append(f"Model '{settings.embedding_model_name}' not found. Available models:\n" + "\n".join(suggestions))
+                    else:
+                        issues.append(f"Model '{settings.embedding_model_name}' not found. No models found in 'models/' directory")
+                        
+    except ImportError:
+        # model_utils not available during early initialization
+        pass
+        
+    return issues
+
+
+def validate_qdrant_config(settings: Settings) -> List[str]:
+    """Validate Qdrant configuration."""
+    issues = []
+    
+    # Basic URL validation
+    if not settings.qdrant_url:
+        issues.append("QDRANT_URL cannot be empty")
+    elif settings.qdrant_url not in [":memory:", "http://localhost:6300"] and not settings.qdrant_url.startswith(("http://", "https://")):
+        issues.append("QDRANT_URL must be ':memory:', start with 'http://' or 'https://'")
+    
+    # Collection name validation
+    if not settings.qdrant_collection:
+        issues.append("QDRANT_COLLECTION cannot be empty")
+    elif "/" in settings.qdrant_collection or " " in settings.qdrant_collection or "@" in settings.qdrant_collection:
+        issues.append("QDRANT_COLLECTION should only contain letters, numbers, hyphens, and underscores")
+    
+    return issues
+
+
+def validate_chunk_delimiters(settings: Settings) -> List[str]:
+    """Validate chunk delimiter configuration."""
+    issues = []
+    
+    try:
+        import json
+        # Try to parse as JSON first
+        try:
+            delimiters = json.loads(settings.chunk_delim)
+            if not isinstance(delimiters, list):
+                issues.append("CHUNK_DELIM JSON must be a list of strings")
+            elif not all(isinstance(d, str) for d in delimiters):
+                issues.append("CHUNK_DELIM list must contain only strings")
+            elif len(delimiters) == 0:
+                issues.append("CHUNK_DELIM list cannot be empty")
+        except json.JSONDecodeError:
+            # Not JSON, should be a string - this is valid
+            pass
+                
+    except ImportError:
+        pass
+        
+    return issues
+
+
+def validate_threshold_config(settings: Settings) -> List[str]:
+    """Validate threshold configuration."""
+    issues = []
+    
+    threshold = settings.chunk_threshold
+    
+    if isinstance(threshold, str):
+        if threshold.lower() not in ["auto"]:
+            try:
+                # Try to parse as float
+                float_val = float(threshold)
+                if float_val >= 1.0 or float_val < 0.0:
+                    issues.append("CHUNK_THRESHOLD as float must be between 0.0 and 1.0 (exclusive of 1.0)")
+            except ValueError:
+                issues.append("CHUNK_THRESHOLD must be 'auto', a float (0.0-1.0), or an integer (1-100)")
+    
+    return issues
+
+
+def validate_settings_comprehensive(settings: Settings) -> Dict[str, Any]:
+    """Comprehensive settings validation with detailed feedback."""
+    validation_result = {
+        "is_valid": True,
+        "issues": [],
+        "warnings": [],
+        "suggestions": []
+    }
+    
+    # Collect all validation issues
+    all_issues = []
+    all_warnings = []
+    
+    # Model validation
+    model_issues = validate_model_accessibility(settings)
+    all_issues.extend(model_issues)
+    
+    # Qdrant validation
+    qdrant_issues = validate_qdrant_config(settings)
+    all_issues.extend(qdrant_issues)
+    
+    # Delimiter validation
+    delimiter_issues = validate_chunk_delimiters(settings)
+    all_issues.extend(delimiter_issues)
+    
+    # Threshold validation
+    threshold_issues = validate_threshold_config(settings)
+    all_issues.extend(threshold_issues)
+    
+    # Configuration warnings (non-blocking)
+    if settings.embedding_dimension is None:
+        all_warnings.append("EMBEDDING_DIMENSION not set - will use fallback. Consider setting explicit dimension for better performance")
+    
+    if settings.device is None:
+        all_warnings.append("EMBEDDING_DEVICE not set - will auto-detect. Consider setting 'cuda:0' or 'cpu' for consistent behavior")
+    
+    if settings.log_format == "console" and settings.environment == "production":
+        all_warnings.append("Using console logging in production environment - consider LOG_FORMAT=json for better log aggregation")
+    
+    if settings.chunk_size > 2048:
+        all_warnings.append("CHUNK_SIZE is very large (>2048) - may impact embedding quality and processing speed")
+    
+    if settings.chunk_similarity_window > 10:
+        all_warnings.append("CHUNK_SIMILARITY_WINDOW is very large (>10) - may slow down processing significantly")
+    
+    # Set final validation state
+    validation_result["is_valid"] = len(all_issues) == 0
+    validation_result["issues"] = all_issues
+    validation_result["warnings"] = all_warnings
+    
+    # Add helpful suggestions
+    if not validation_result["is_valid"]:
+        validation_result["suggestions"] = [
+            "Check your .env file for typos",
+            "Ensure all required models are downloaded and placed in the models/ directory",
+            "Verify Qdrant is running if using external instance",
+            "Run 'python -m src.tools.validate_config' for detailed diagnostics"
+        ]
+    
+    return validation_result
+
+
+@lru_cache(maxsize=1) 
+def get_settings(validate: bool = False) -> Settings:
+    """Return a cached Settings instance with optional validation.
+    
+    Args:
+        validate: Whether to run comprehensive validation (default: True)
+        
+    Returns:
+        Settings instance
+        
+    Raises:
+        MemoirrConfigError: If validation fails and validate=True
+    """
+    try:
+        settings = Settings()  # type: ignore[call-arg]
+        
+        if validate:
+            validation = validate_settings_comprehensive(settings)
+            
+            # Log validation results
+            try:
+                from src.core.logging_config import get_logger
+                logger = get_logger(__name__)
+                
+                if not validation["is_valid"]:
+                    logger.error(
+                        "Configuration validation failed",
+                        issues=validation["issues"],
+                        component="config_validation"
+                    )
+                    
+                if validation["warnings"]:
+                    logger.warning(
+                        "Configuration warnings detected",
+                        warnings=validation["warnings"],
+                        component="config_validation"
+                    )
+                    
+                if validation["is_valid"]:
+                    logger.info(
+                        "Configuration validation passed",
+                        warnings_count=len(validation["warnings"]),
+                        component="config_validation"
+                    )
+                    
+            except ImportError:
+                # Logging not available during early initialization
+                pass
+            
+            # Raise error if validation failed
+            if not validation["is_valid"]:
+                error_msg = "Configuration validation failed:\n"
+                for issue in validation["issues"]:
+                    error_msg += f"  ❌ {issue}\n"
+                
+                if validation["suggestions"]:
+                    error_msg += "\nSuggestions:\n"
+                    for suggestion in validation["suggestions"]:
+                        error_msg += f"  💡 {suggestion}\n"
+                
+                raise MemoirrConfigError(error_msg, validation["suggestions"])
+        
+        return settings
+        
+    except Exception as e:
+        if isinstance(e, MemoirrConfigError):
+            raise
+        else:
+            raise MemoirrConfigError(f"Failed to load configuration: {str(e)}")
