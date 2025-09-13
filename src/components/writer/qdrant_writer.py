@@ -19,6 +19,7 @@ from haystack.dataclasses.document import Document
 from haystack_integrations.document_stores.qdrant import QdrantDocumentStore
 from typing import Any, Dict, List
 from src.core.config import get_settings
+from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger
 
 
 @component
@@ -27,6 +28,8 @@ class QdrantWriter:
 
     def __init__(self) -> None:
         settings = get_settings()
+        self._logger = get_logger(__name__)
+        self._metrics = MetricsLogger(self._logger)
         kwargs = dict(
             url=settings.qdrant_url,
             index=settings.qdrant_collection,
@@ -38,6 +41,14 @@ class QdrantWriter:
         if embedding_dimension is not None:
             kwargs["embedding_dim"] = embedding_dimension
         self._store = QdrantDocumentStore(**kwargs)
+        
+        self._logger.info(
+            "QdrantWriter initialized successfully",
+            qdrant_url=settings.qdrant_url,
+            collection_name=settings.qdrant_collection,
+            embedding_dimension=embedding_dimension,
+            component="qdrant_writer"
+        )
 
     @component.output_types(stats=dict)
     def run(self, documents: List[Dict[str, Any]] ) -> dict[str, object]:  # type: ignore[override]
@@ -46,39 +57,99 @@ class QdrantWriter:
         Args:
             documents: list of dicts; each dict should have content, embedding, and optional meta
         """
-        docs: List[Document] = []
-        skipped = 0
-        
-        for i, d in enumerate(documents):
-            try:
-                content = d.get("content")
-                embedding = d.get("embedding")
-                meta = d.get("meta", None)
-                
-                # Validate required fields
-                if not content:
-                    print(f"Warning: Document {i} missing content, skipping")
-                    skipped += 1
-                    continue
+        with LoggedOperation("document_writing", self._logger, total_documents=len(documents)) as op:
+            docs: List[Document] = []
+            skipped = 0
+            
+            for i, d in enumerate(documents):
+                try:
+                    content = d.get("content")
+                    embedding = d.get("embedding")
+                    meta = d.get("meta", None)
                     
-                if not embedding or not isinstance(embedding, list):
-                    print(f"Warning: Document {i} missing or invalid embedding, skipping")
+                    # Validate required fields
+                    if not content:
+                        self._logger.warning(
+                            "Document missing required field",
+                            document_index=i,
+                            missing_field="content",
+                            action="skipped",
+                            component="qdrant_writer"
+                        )
+                        skipped += 1
+                        continue
+                        
+                    if not embedding or not isinstance(embedding, list):
+                        self._logger.warning(
+                            "Document missing or invalid embedding",
+                            document_index=i,
+                            missing_field="embedding",
+                            embedding_type=type(embedding).__name__ if embedding else "None",
+                            action="skipped",
+                            component="qdrant_writer"
+                        )
+                        skipped += 1
+                        continue
+                    
+                    docs.append(Document(content=content, embedding=embedding, meta=meta))
+                    
+                    self._logger.debug(
+                        "Document processed successfully",
+                        document_index=i,
+                        content_length=len(content),
+                        embedding_dimension=len(embedding),
+                        has_metadata=meta is not None,
+                        component="qdrant_writer"
+                    )
+                    
+                except Exception as e:
+                    self._logger.warning(
+                        "Failed to process document",
+                        document_index=i,
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        action="skipped",
+                        component="qdrant_writer"
+                    )
                     skipped += 1
                     continue
-                
-                docs.append(Document(content=content, embedding=embedding, meta=meta))
-            except Exception as e:
-                print(f"Warning: Failed to process document {i}: {e}")
-                skipped += 1
-                continue
-        
-        written_count = 0
-        if docs:
-            try:
-                self._store.write_documents(docs)
-                written_count = len(docs)
-            except Exception as e:
-                print(f"Error writing documents to Qdrant: {e}")
-                raise
-        
-        return {"stats": {"written": written_count, "skipped": skipped, "total": len(documents)}}
+            
+            written_count = 0
+            if docs:
+                try:
+                    self._logger.info(
+                        "Writing documents to Qdrant",
+                        document_count=len(docs),
+                        component="qdrant_writer"
+                    )
+                    self._store.write_documents(docs)
+                    written_count = len(docs)
+                    
+                    self._logger.info(
+                        "Documents written successfully",
+                        written_count=written_count,
+                        component="qdrant_writer"
+                    )
+                    
+                except Exception as e:
+                    self._logger.error(
+                        "Failed to write documents to vector store",
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        document_count=len(docs),
+                        component="qdrant_writer"
+                    )
+                    raise
+            
+            # Add final context and metrics
+            op.add_context(
+                documents_written=written_count,
+                documents_skipped=skipped,
+                success_rate=written_count / len(documents) if documents else 0
+            )
+            
+            self._metrics.counter("documents_written_total", written_count, component="qdrant_writer", status="success")
+            if skipped > 0:
+                self._metrics.counter("documents_skipped_total", skipped, component="qdrant_writer", reason="validation_failed")
+            
+            return {"stats": {"written": written_count, "skipped": skipped, "total": len(documents)}}

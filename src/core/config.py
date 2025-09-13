@@ -79,6 +79,13 @@ class Settings(BaseSettings):
     # Embedding fallback (should be avoided - prefer explicit EMBEDDING_DIMENSION)
     embedding_dimension_fallback: int = Field(default=1024, alias="EMBEDDING_DIMENSION_FALLBACK")
 
+    # Logging configuration
+    log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    log_format: str = Field(default="json", alias="LOG_FORMAT")  # 'json' or 'console'
+    log_file: str | None = Field(default=None, alias="LOG_FILE")
+    service_name: str = Field(default="memoirr", alias="SERVICE_NAME")
+    environment: str = Field(default="development", alias="ENVIRONMENT")
+
     # Chunker settings
     chunk_threshold: str = Field(default="auto", alias="CHUNK_THRESHOLD")
     chunk_size: int = Field(default=512, alias="CHUNK_SIZE")

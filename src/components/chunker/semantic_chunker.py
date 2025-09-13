@@ -13,6 +13,7 @@ Adheres to Memoirr code standards: type hints, Google-style docstrings, SRP.
 from haystack import component
 from typing import List, Optional
 from src.components.chunker.utilities.semantic_chunker import orchestrate_chunking as orchestrate_module
+from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger
 
 
 DEFAULT_DELIMS = [". ", "! ", "? ", "\n"]
@@ -55,6 +56,9 @@ class SemanticChunker:
         import json
 
         settings = get_settings()
+        self._logger = get_logger(__name__)
+        self._metrics = MetricsLogger(self._logger)
+        
         # Resolve values from args or .env
         self.threshold = threshold if threshold is not None else settings.chunk_threshold  # type: ignore[assignment]
         self.chunk_size = chunk_size if chunk_size is not None else settings.chunk_size
@@ -78,19 +82,37 @@ class SemanticChunker:
             include_caption_indices if include_caption_indices is not None else settings.chunk_include_caption_indices
         )
         self.fail_fast = fail_fast if fail_fast is not None else settings.chunk_fail_fast
+        
+        self._logger.info(
+            "SemanticChunker initialized",
+            threshold=self.threshold,
+            chunk_size=self.chunk_size,
+            similarity_window=self.similarity_window,
+            min_sentences=self.min_sentences,
+            component="chunker"
+        )
 
     @component.output_types(chunk_lines=List[str], stats=dict)
     def run(self, jsonl_lines: List[str]) -> dict[str, object]:  # type: ignore[override]
-            """Run semantic chunking on cleaned caption JSONL lines.
+        """Run semantic chunking on cleaned caption JSONL lines.
 
-            Args:
-                jsonl_lines: List of JSONL lines (each with text, start_ms, end_ms, caption_index).
+        Args:
+            jsonl_lines: List of JSONL lines (each with text, start_ms, end_ms, caption_index).
 
-            Returns:
-                Dict with:
-                - chunk_lines: JSONL lines for time-aware chunks, ready for embedding/indexing
-                - stats: Summary counts from the chunking run
-            """
+        Returns:
+            Dict with:
+            - chunk_lines: JSONL lines for time-aware chunks, ready for embedding/indexing
+            - stats: Summary counts from the chunking run
+        """
+        with LoggedOperation("semantic_chunking", self._logger, input_captions=len(jsonl_lines)) as op:
+            self._logger.info(
+                "Starting semantic chunking",
+                input_captions=len(jsonl_lines),
+                threshold=self.threshold,
+                chunk_size=self.chunk_size,
+                component="chunker"
+            )
+            
             lines, stats = orchestrate_module.orchestrate_semantic_chunking(
                 jsonl_lines,
                 threshold=self.threshold,
@@ -105,4 +127,25 @@ class SemanticChunker:
                 include_caption_indices=self.include_caption_indices,
                 fail_fast=self.fail_fast,
             )
+            
+            # Add context and metrics
+            op.add_context(
+                output_chunks=len(lines),
+                avg_tokens_per_chunk=stats.get("avg_tokens_per_chunk", 0),
+                input_captions=stats.get("input_captions", 0),
+                output_chunks_final=stats.get("output_chunks", 0)
+            )
+            
+            self._metrics.counter("captions_chunked_total", len(jsonl_lines), component="chunker")
+            self._metrics.counter("chunks_generated_total", len(lines), component="chunker")
+            self._metrics.histogram("avg_tokens_per_chunk", stats.get("avg_tokens_per_chunk", 0), component="chunker")
+            
+            self._logger.info(
+                "Semantic chunking completed",
+                input_captions=len(jsonl_lines),
+                output_chunks=len(lines),
+                avg_tokens_per_chunk=stats.get("avg_tokens_per_chunk", 0),
+                component="chunker"
+            )
+            
             return {"chunk_lines": lines, "stats": stats}

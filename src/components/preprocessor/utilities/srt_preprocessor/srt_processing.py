@@ -18,6 +18,7 @@ from src.components.preprocessor.utilities.srt_preprocessor.language_filter impo
 from src.components.preprocessor.utilities.srt_preprocessor.parse_srt import parse_srt_text
 from src.components.preprocessor.utilities.srt_preprocessor.to_jsonl import to_jsonl_lines
 from src.components.preprocessor.utilities.srt_preprocessor.types import CaptionUnit, CleanStats
+from src.core.logging_config import get_logger
 
 
 def srt_preprocess_text(
