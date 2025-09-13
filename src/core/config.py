@@ -30,6 +30,13 @@ class Settings(BaseSettings):
         - CHUNK_INCLUDE_PARAMS: bool; default True.
         - CHUNK_INCLUDE_CAPTION_INDICES: bool; default True.
         - CHUNK_FAIL_FAST: bool; default True.
+
+        Qdrant configuration:
+        - QDRANT_URL: string; default ":memory:" for in-memory storage.
+        - QDRANT_COLLECTION: string; default "documents".
+        - QDRANT_RECREATE_INDEX: bool; default True.
+        - QDRANT_RETURN_EMBEDDING: bool; default False.
+        - QDRANT_WAIT_RESULT: bool; default True.
     """
 
     embedding_model_name: str = Field(
@@ -54,6 +61,13 @@ class Settings(BaseSettings):
     # Preprocessor settings
     pre_min_len: int = Field(default=1, alias="PRE_MIN_LEN")
     pre_dedupe_window_ms: int = Field(default=1000, alias="PRE_DEDUPE_WINDOW_MS")
+
+    # Qdrant settings
+    qdrant_url: str = Field(default=":memory:", alias="QDRANT_URL")
+    qdrant_collection: str = Field(default="documents", alias="QDRANT_COLLECTION")
+    qdrant_recreate_index: bool = Field(default=True, alias="QDRANT_RECREATE_INDEX")
+    qdrant_return_embedding: bool = Field(default=False, alias="QDRANT_RETURN_EMBEDDING")
+    qdrant_wait_result: bool = Field(default=True, alias="QDRANT_WAIT_RESULT")
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="", extra="ignore")
 

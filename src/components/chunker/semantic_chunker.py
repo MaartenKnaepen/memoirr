@@ -8,10 +8,10 @@ that is loaded from a local folder indicated by an environment variable.
 
 Adheres to Memoirr code standards: type hints, Google-style docstrings, SRP.
 """
-from typing import Dict, List, Optional, Any
+
 
 from haystack import component
-
+from typing import Dict, List, Optional
 from src.components.chunker.utilities.semantic_chunker import orchestrate_chunking as orchestrate_module
 
 
@@ -79,30 +79,30 @@ class SemanticChunker:
         )
         self.fail_fast = fail_fast if fail_fast is not None else settings.chunk_fail_fast
 
-    @component.output_types(chunk_lines=list, stats=dict)
-    def run(self, jsonl_lines: list) -> Dict[str, object]:  # type: ignore[override]
-        """Run semantic chunking on cleaned caption JSONL lines.
+    @component.output_types(chunk_lines=List[str], stats=dict)
+    def run(self, jsonl_lines: list) -> dict[str, object]:  # type: ignore[override]
+            """Run semantic chunking on cleaned caption JSONL lines.
 
-        Args:
-            jsonl_lines: List of JSONL lines (each with text, start_ms, end_ms, caption_index).
+            Args:
+                jsonl_lines: List of JSONL lines (each with text, start_ms, end_ms, caption_index).
 
-        Returns:
-            Dict with:
-              - chunk_lines: JSONL lines for time-aware chunks, ready for embedding/indexing
-              - stats: Summary counts from the chunking run
-        """
-        lines, stats = orchestrate_module.orchestrate_semantic_chunking(
-            jsonl_lines,
-            threshold=self.threshold,
-            chunk_size=self.chunk_size,
-            similarity_window=self.similarity_window,
-            min_sentences=self.min_sentences,
-            min_characters_per_sentence=self.min_characters_per_sentence,
-            delim=self.delim,
-            include_delim=self.include_delim,
-            skip_window=self.skip_window,
-            include_params=self.include_params,
-            include_caption_indices=self.include_caption_indices,
-            fail_fast=self.fail_fast,
-        )
-        return {"chunk_lines": lines, "stats": stats}
+            Returns:
+                Dict with:
+                - chunk_lines: JSONL lines for time-aware chunks, ready for embedding/indexing
+                - stats: Summary counts from the chunking run
+            """
+            lines, stats = orchestrate_module.orchestrate_semantic_chunking(
+                jsonl_lines,
+                threshold=self.threshold,
+                chunk_size=self.chunk_size,
+                similarity_window=self.similarity_window,
+                min_sentences=self.min_sentences,
+                min_characters_per_sentence=self.min_characters_per_sentence,
+                delim=self.delim,
+                include_delim=self.include_delim,
+                skip_window=self.skip_window,
+                include_params=self.include_params,
+                include_caption_indices=self.include_caption_indices,
+                fail_fast=self.fail_fast,
+            )
+            return {"chunk_lines": lines, "stats": stats}
