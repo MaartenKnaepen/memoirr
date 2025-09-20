@@ -57,6 +57,21 @@ class Settings(BaseSettings):
         - QDRANT_RECREATE_INDEX: bool; default True.
         - QDRANT_RETURN_EMBEDDING: bool; default True.
         - QDRANT_WAIT_RESULT: bool; default True.
+
+        Retrieval configuration:
+        - RETRIEVAL_TOP_K: int; default 10 (maximum number of documents to retrieve).
+        - RETRIEVAL_SCORE_THRESHOLD: float; default 0.0 (minimum similarity score, 0.0-1.0).
+        - RETRIEVAL_RETURN_EMBEDDING: bool; default False (whether to include embeddings in results).
+
+        Groq configuration:
+        - GROQ_API_KEY: string; optional (API key for Groq service).
+        - GROQ_MODEL: string; default "llama3-8b-8192" (model name for text generation).
+        - GROQ_MAX_TOKENS: int; default 1024 (maximum tokens to generate).
+        - GROQ_TEMPERATURE: float; default 0.7 (sampling temperature, 0.0-2.0).
+        - GROQ_TOP_P: float; default 1.0 (nucleus sampling parameter, 0.0-1.0).
+        - GROQ_STREAM: bool; default False (whether to stream responses).
+        - GROQ_SYSTEM_PROMPT_TEMPLATE: string; default "default_system.j2" (Jinja2 template file in src/prompts/).
+        - GROQ_MAX_CONTEXT_LENGTH: int; default 4000 (maximum context length in characters).
     """
 
     embedding_model_name: str = Field(
@@ -117,6 +132,21 @@ class Settings(BaseSettings):
     qdrant_recreate_index: bool = Field(default=True, alias="QDRANT_RECREATE_INDEX")
     qdrant_return_embedding: bool = Field(default=True, alias="QDRANT_RETURN_EMBEDDING")
     qdrant_wait_result: bool = Field(default=True, alias="QDRANT_WAIT_RESULT")
+
+    # Retrieval settings
+    retrieval_top_k: int = Field(default=10, alias="RETRIEVAL_TOP_K")
+    retrieval_score_threshold: float = Field(default=0.0, alias="RETRIEVAL_SCORE_THRESHOLD")
+    retrieval_return_embedding: bool = Field(default=False, alias="RETRIEVAL_RETURN_EMBEDDING")
+
+    # Groq settings
+    groq_api_key: Optional[str] = Field(default=None, alias="GROQ_API_KEY")
+    groq_model: str = Field(default="llama3-8b-8192", alias="GROQ_MODEL")
+    groq_max_tokens: int = Field(default=1024, alias="GROQ_MAX_TOKENS")
+    groq_temperature: float = Field(default=0.7, alias="GROQ_TEMPERATURE")
+    groq_top_p: float = Field(default=1.0, alias="GROQ_TOP_P")
+    groq_stream: bool = Field(default=False, alias="GROQ_STREAM")
+    groq_system_prompt_template: str = Field(default="default_system.j2", alias="GROQ_SYSTEM_PROMPT_TEMPLATE")
+    groq_max_context_length: int = Field(default=4000, alias="GROQ_MAX_CONTEXT_LENGTH")
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="", extra="ignore")
 
@@ -199,6 +229,48 @@ class Settings(BaseSettings):
         if v.lower() not in valid_envs:
             raise ValueError(f"ENVIRONMENT must be one of: {', '.join(valid_envs)}")
         return v.lower()
+
+    @field_validator('retrieval_top_k')
+    @classmethod
+    def validate_retrieval_top_k(cls, v):
+        if v <= 0:
+            raise ValueError("RETRIEVAL_TOP_K must be positive")
+        return v
+
+    @field_validator('retrieval_score_threshold')
+    @classmethod
+    def validate_retrieval_score_threshold(cls, v):
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("RETRIEVAL_SCORE_THRESHOLD must be between 0.0 and 1.0")
+        return v
+
+    @field_validator('groq_max_tokens')
+    @classmethod
+    def validate_groq_max_tokens(cls, v):
+        if v <= 0:
+            raise ValueError("GROQ_MAX_TOKENS must be positive")
+        return v
+
+    @field_validator('groq_temperature')
+    @classmethod
+    def validate_groq_temperature(cls, v):
+        if not 0.0 <= v <= 2.0:
+            raise ValueError("GROQ_TEMPERATURE must be between 0.0 and 2.0")
+        return v
+
+    @field_validator('groq_top_p')
+    @classmethod
+    def validate_groq_top_p(cls, v):
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("GROQ_TOP_P must be between 0.0 and 1.0")
+        return v
+
+    @field_validator('groq_max_context_length')
+    @classmethod
+    def validate_groq_max_context_length(cls, v):
+        if v <= 0:
+            raise ValueError("GROQ_MAX_CONTEXT_LENGTH must be positive")
+        return v
 
 
 class MemoirrConfigError(Exception):

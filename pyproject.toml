@@ -11,6 +11,7 @@ dependencies = [
     "haystack>=0.42",
     "ipykernel>=6.30.1",
     "ipywidgets>=8.1.7",
+    "jinja2>=3.1.0",
     "langdetect>=1.0.9",
     "plexapi>=4.17.1",
     "pydantic-settings>=2.10.1",
