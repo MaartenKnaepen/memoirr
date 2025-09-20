@@ -71,6 +71,10 @@ def test_end_to_end_pipeline_writes_embedded_chunks(monkeypatch):
 
     monkeypatch.setattr(writer_mod, "QdrantDocumentStore", FakeStore)
 
+    # Patch language detection to ensure English text passes through
+    import src.components.preprocessor.utilities.srt_preprocessor.language_filter as lang_filter
+    monkeypatch.setattr(lang_filter, "is_english_text", lambda text: True)  # Always consider text as English
+
     pipe = build_srt_to_qdrant_pipeline()
 
     srt_text = (

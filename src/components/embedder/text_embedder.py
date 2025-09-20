@@ -100,25 +100,36 @@ class TextEmbedder:
         Returns:
             Dict with a single key `embedding` containing the list of list[float] vectors.
         """
-        try:
-            # Try batch processing first (more efficient)
-            result = self._embedder.run(text)
-            embeddings = result.get("embedding", [])
-            # Check if we got back a list with the same length as input texts
-            if isinstance(embeddings, list) and len(embeddings) == len(text):
-                # Ensure each embedding is a list (for proper format)
-                formatted_embeddings = []
-                for emb in embeddings:
-                    if isinstance(emb, list):
-                        formatted_embeddings.append(emb)
-                    else:
-                        # Handle single values or other formats
-                        formatted_embeddings.append([emb] if isinstance(emb, (int, float)) else list(emb))
-                return {"embedding": formatted_embeddings}
-        except (TypeError, ValueError, AttributeError):
-            # Fallback to individual processing if batch processing fails
-            pass
-            
+        with LoggedOperation("text_embedding", self._logger, input_texts=len(text)) as op:
+            try:
+                # Try batch processing first (more efficient)
+                result = self._embedder.run(text)
+                embeddings = result.get("embedding", [])
+                # Check if we got back a list with the same length as input texts
+                if isinstance(embeddings, list) and len(embeddings) == len(text):
+                    # Ensure each embedding is a list (for proper format)
+                    formatted_embeddings = []
+                    for emb in embeddings:
+                        if isinstance(emb, list):
+                            formatted_embeddings.append(emb)
+                        else:
+                            # Handle single values or other formats
+                            formatted_embeddings.append([emb] if isinstance(emb, (int, float)) else list(emb))
+                    
+                    # Add context and metrics for successful batch processing
+                    op.add_context(
+                        successful_embeddings=len(formatted_embeddings),
+                        failed_embeddings=0,
+                        processing_mode="batch"
+                    )
+                    
+                    self._metrics.counter("embeddings_generated_total", len(formatted_embeddings), component="embedder", mode="batch", status="success")
+                    
+                    return {"embedding": formatted_embeddings}
+            except (TypeError, ValueError, AttributeError):
+                # Fallback to individual processing if batch processing fails
+                pass
+                
             # Individual processing fallback with better error handling
             self._logger.info("Using individual embedding processing", text_count=len(text), component="embedder")
             embeddings = []

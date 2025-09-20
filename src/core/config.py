@@ -34,6 +34,9 @@ class Settings(BaseSettings):
         Language detection configuration:
         - ENGLISH_ASCII_THRESHOLD: float; default 0.95 (95% ASCII required for English detection).
         - ASCII_CHAR_UPPER_LIMIT: int; default 128 (standard ASCII character limit).
+        - USE_LANGDETECT: bool; default True (use langdetect library for proper language detection).
+        - LANGDETECT_CONFIDENCE_THRESHOLD: float; default 0.7 (minimum confidence for langdetect classification).
+        - LANGDETECT_FALLBACK_TO_ASCII: bool; default True (fallback to ASCII heuristic if langdetect fails).
 
         Time conversion configuration:
         - SECONDS_TO_MILLISECONDS_FACTOR: int; default 1000 (conversion factor from seconds to milliseconds).
@@ -65,6 +68,9 @@ class Settings(BaseSettings):
     # Language detection constants
     english_ascii_threshold: float = Field(default=0.95, alias="ENGLISH_ASCII_THRESHOLD")
     ascii_char_upper_limit: int = Field(default=128, alias="ASCII_CHAR_UPPER_LIMIT")
+    use_langdetect: bool = Field(default=True, alias="USE_LANGDETECT")
+    langdetect_confidence_threshold: float = Field(default=0.7, alias="LANGDETECT_CONFIDENCE_THRESHOLD")
+    langdetect_fallback_to_ascii: bool = Field(default=True, alias="LANGDETECT_FALLBACK_TO_ASCII")
 
     # Time conversion constants
     seconds_to_milliseconds_factor: int = Field(default=1000, alias="SECONDS_TO_MILLISECONDS_FACTOR")
@@ -161,6 +167,13 @@ class Settings(BaseSettings):
     def validate_ascii_limit(cls, v):
         if not 1 <= v <= 1114111:  # Valid Unicode range
             raise ValueError("ASCII_CHAR_UPPER_LIMIT must be between 1 and 1114111")
+        return v
+
+    @field_validator('langdetect_confidence_threshold')
+    @classmethod
+    def validate_langdetect_confidence_threshold(cls, v):
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("LANGDETECT_CONFIDENCE_THRESHOLD must be between 0.0 and 1.0")
         return v
 
     @field_validator('log_level')
