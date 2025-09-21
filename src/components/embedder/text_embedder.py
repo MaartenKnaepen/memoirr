@@ -11,7 +11,7 @@ following the simple, JSON-serializable socket guidance in documentation/qwen.md
 
 from typing import List
 
-from haystack import component
+from haystack.core.component import component
 from haystack.components.embedders import SentenceTransformersTextEmbedder
 
 from src.core.config import get_settings

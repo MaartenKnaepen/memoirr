@@ -10,7 +10,7 @@ Adheres to Memoirr code standards: type hints, Google-style docstrings, SRP.
 """
 
 
-from haystack import component
+from haystack.core.component import component
 from typing import List, Optional
 from src.components.chunker.utilities.semantic_chunker import orchestrate_chunking as orchestrate_module
 from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger

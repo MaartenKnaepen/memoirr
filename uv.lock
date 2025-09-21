@@ -631,15 +631,6 @@ wheels = [
 ]
 
 [[package]]
-name = "construct"
-version = "2.5.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/2e/939111841b78ca556b84725827daefd69a50f39b0269341df0c8e58ac785/construct-2.5.3.tar.gz", hash = "sha256:b2233bc7c6a4d73803f5806bc3167e4935daa3ea8a5cd056cbabbdb9c3d79a36", size = 688072, upload-time = "2016-08-22T23:57:19.289Z" }
-
-[[package]]
 name = "cryptography"
 version = "45.0.7"
 source = { registry = "https://pypi.org/simple" }
@@ -1108,20 +1099,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/1d/17/afa56379f94ad0fe8defd37d6eb3f89a25404ffc71d4d848893d270325fc/h2-4.3.0.tar.gz", hash = "sha256:6c59efe4323fa18b47a632221a1888bd7fde6249819beda254aeca909f221bf1", size = 2152026, upload-time = "2025-08-23T18:12:19.778Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/69/b2/119f6e6dcbd96f9069ce9a2665e0146588dc9f88f29549711853645e736a/h2-4.3.0-py3-none-any.whl", hash = "sha256:c438f029a25f7945c69e0ccf0fb951dc3f73a5f6412981daee861431b70e2bdd", size = 61779, upload-time = "2025-08-23T18:12:17.779Z" },
-]
-
-[[package]]
-name = "haystack"
-version = "0.42"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "construct" },
-    { name = "pefile" },
-    { name = "python-ptrace" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/b7/1647c0807478c81a997ae3c4b9a1db0428b4a1d4fd59dcf70a869ebec2a5/haystack-0.42.tar.gz", hash = "sha256:4eaf0ba481d160639e240602734a9195f3dfc37c6c0ad132a14e9eb1454868f0", size = 158461, upload-time = "2017-07-03T04:44:49.592Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3a/4b/b31b92843123801604c496ed483cb8f3d9b998ee54d0233289a417a1e187/haystack-0.42-py2.py3-none-any.whl", hash = "sha256:3d1a906ddca6a08c6e5f965026cc1978f09795c65d5ab2c84b3c039378a9bec8", size = 179600, upload-time = "2017-07-03T04:44:52.237Z" },
 ]
 
 [[package]]
@@ -1865,9 +1842,10 @@ dependencies = [
     { name = "chonkie", extra = ["all", "qdrant"] },
     { name = "fastembed" },
     { name = "groq" },
-    { name = "haystack" },
+    { name = "haystack-ai" },
     { name = "ipykernel" },
     { name = "ipywidgets" },
+    { name = "jinja2" },
     { name = "langdetect" },
     { name = "plexapi" },
     { name = "pydantic-settings" },
@@ -1883,9 +1861,10 @@ requires-dist = [
     { name = "chonkie", extras = ["all", "qdrant"], specifier = ">=1.2.1" },
     { name = "fastembed", specifier = ">=0.7.3" },
     { name = "groq", specifier = ">=0.31.1" },
-    { name = "haystack", specifier = ">=0.42" },
+    { name = "haystack-ai", extras = ["all"], specifier = ">=2.17.1" },
     { name = "ipykernel", specifier = ">=6.30.1" },
     { name = "ipywidgets", specifier = ">=8.1.7" },
+    { name = "jinja2", specifier = ">=3.1.0" },
     { name = "langdetect", specifier = ">=1.0.9" },
     { name = "plexapi", specifier = ">=4.17.1" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
@@ -2732,15 +2711,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d4/de/53e0bcf53d13e005bd8c92e7855142494f41171b34c2536b86187474184d/parso-0.8.5.tar.gz", hash = "sha256:034d7354a9a018bdce352f48b2a8a450f05e9d6ee85db84764e9b6bd96dafe5a", size = 401205, upload-time = "2025-08-23T15:15:28.028Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/16/32/f8e3c85d1d5250232a5d3477a2a28cc291968ff175caeadaf3cc19ce0e4a/parso-0.8.5-py2.py3-none-any.whl", hash = "sha256:646204b5ee239c396d040b90f9e272e9a8017c630092bf59980beb62fd033887", size = 106668, upload-time = "2025-08-23T15:15:25.663Z" },
-]
-
-[[package]]
-name = "pefile"
-version = "2024.8.26"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/03/4f/2750f7f6f025a1507cd3b7218691671eecfd0bbebebe8b39aa0fe1d360b8/pefile-2024.8.26.tar.gz", hash = "sha256:3ff6c5d8b43e8c37bb6e6dd5085658d658a7a0bdcd20b6a07b1fcfc1c4e9d632", size = 76008, upload-time = "2024-08-26T20:58:38.155Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/54/16/12b82f791c7f50ddec566873d5bdd245baa1491bac11d15ffb98aecc8f8b/pefile-2024.8.26-py3-none-any.whl", hash = "sha256:76f8b485dcd3b1bb8166f1128d395fa3d87af26360c2358fb75b80019b957c6f", size = 74766, upload-time = "2024-08-26T21:01:02.632Z" },
 ]
 
 [[package]]
@@ -3606,15 +3576,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f6/b0/4bc07ccd3572a2f9df7e6782f52b0c6c90dcbb803ac4a167702d7d0dfe1e/python_dotenv-1.1.1.tar.gz", hash = "sha256:a8a6399716257f45be6a007360200409fce5cda2661e3dec71d23dc15f6189ab", size = 41978, upload-time = "2025-06-24T04:21:07.341Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/ed/539768cf28c661b5b068d66d96a2f155c4971a5d55684a514c1a0e0dec2f/python_dotenv-1.1.1-py3-none-any.whl", hash = "sha256:31f23644fe2602f88ff55e1f5c79ba497e01224ee7737937930c448e4d0e24dc", size = 20556, upload-time = "2025-06-24T04:21:06.073Z" },
-]
-
-[[package]]
-name = "python-ptrace"
-version = "0.9.9"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a5/8f/9700154c92854687c78380a5fa226233d89b2631c74e420b25c93ebc6d95/python-ptrace-0.9.9.tar.gz", hash = "sha256:56bbfef44eaf3a77be48138cca5767cdf471e8278fe1499f9b72f151907f25cf", size = 108964, upload-time = "2024-03-13T14:57:23.332Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3e/33/0865143ddf633d27881296e77bd66b24df5faa9d744267c1d29aeb902a07/python_ptrace-0.9.9-py2.py3-none-any.whl", hash = "sha256:8c97d23d55e551e7d7c5b104b87635fdd27d6c188c9cc205e8d0f6d71272b712", size = 104763, upload-time = "2024-03-13T15:00:01.045Z" },
 ]
 
 [[package]]

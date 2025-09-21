@@ -18,7 +18,7 @@ class TestGroqGeneratorComponent:
         """Test that component initializes with default configuration."""
         with patch('src.core.config.get_settings') as mock_settings:
             mock_settings.return_value = MagicMock(
-                groq_model="llama3-8b-8192",
+                groq_model="llama-3.1-8b-instant",
                 groq_system_prompt_template="default_system.j2",
                 groq_max_tokens=1024,
                 groq_temperature=0.7,
@@ -28,7 +28,7 @@ class TestGroqGeneratorComponent:
             
             generator = GroqGenerator()
             
-            assert generator.model == "llama3-8b-8192"
+            assert generator.model == "llama-3.1-8b-instant"
             assert generator.system_prompt_template == "default_system.j2"
             assert generator.max_tokens == 1024
             assert generator.temperature == 0.7
@@ -68,7 +68,7 @@ class TestGroqGeneratorComponent:
         """Test that run method generates and returns replies with metadata."""
         mock_replies = ["This is a generated response about the movie scene."]
         mock_meta = [{
-            "model": "llama3-8b-8192",
+            "model": "llama-3.1-8b-instant",
             "finish_reason": "stop",
             "usage": {
                 "prompt_tokens": 150,
@@ -84,7 +84,7 @@ class TestGroqGeneratorComponent:
             
             with patch('src.core.config.get_settings') as mock_settings:
                 mock_settings.return_value = MagicMock(
-                    groq_model="llama3-8b-8192",
+                    groq_model="llama-3.1-8b-instant",
                     groq_system_prompt=None,
                     groq_max_tokens=1024,
                     groq_temperature=0.7,
@@ -105,14 +105,14 @@ class TestGroqGeneratorComponent:
                 assert len(result["replies"]) == 1
                 assert result["replies"][0] == "This is a generated response about the movie scene."
                 assert len(result["meta"]) == 1
-                assert result["meta"][0]["model"] == "llama3-8b-8192"
+                assert result["meta"][0]["model"] == "llama-3.1-8b-instant"
                 
                 # Verify orchestrate_generation was called with correct parameters
                 mock_orchestrate.assert_called_once()
                 call_args = mock_orchestrate.call_args[1]
                 assert call_args["query"] == "What did Character A say?"
                 assert len(call_args["documents"]) == 1
-                assert call_args["model"] == "llama3-8b-8192"
+                assert call_args["model"] == "llama-3.1-8b-instant"
 
     def test_groq_generator_run_with_parameter_overrides(self):
         """Test that run method respects parameter overrides."""

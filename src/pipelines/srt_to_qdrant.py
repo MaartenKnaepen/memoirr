@@ -8,7 +8,7 @@ This module provides:
 
 Usage example:
 
-from haystack import Pipeline
+from haystack.core.pipeline import Pipeline
 from src.pipelines.srt_to_qdrant import build_srt_to_qdrant_pipeline
 
 pipe = build_srt_to_qdrant_pipeline()
@@ -20,7 +20,8 @@ written = result["write"]["stats"]["written"]
 import json
 from typing import Any, Dict, List
 
-from haystack import Pipeline, component
+from haystack.core.pipeline import Pipeline
+from haystack.core.component import component
 from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger
 
 

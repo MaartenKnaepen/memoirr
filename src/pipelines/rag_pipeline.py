@@ -10,7 +10,7 @@ Adheres to Memoirr coding standards: type hints, Google-style docstrings, SRP.
 
 from typing import Dict, Any, Optional
 
-from haystack import Pipeline
+from haystack.core.pipeline import Pipeline
 
 from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger
 from src.components.retriever.qdrant_retriever import QdrantRetriever
