@@ -6,10 +6,10 @@ with comprehensive mocking of dependencies.
 
 import pytest
 from unittest.mock import patch, MagicMock
-
-from haystack import Pipeline
+from src.core.config import get_settings
 from haystack.dataclasses import Document
 from src.pipelines.rag_pipeline import (
+
     build_rag_pipeline,
     run_rag_query,
     RAGPipeline
@@ -73,6 +73,7 @@ class TestRAGQueryExecution:
 
     def create_mock_pipeline_result(self):
         """Helper to create mock pipeline results."""
+        settings = get_settings()
         mock_documents = [
             Document(
                 content="Technology should be used to help people.",
@@ -88,7 +89,7 @@ class TestRAGQueryExecution:
 
         mock_replies = ["Based on the context, Tony Stark believes technology should help people, while Bruce Banner emphasizes innovation's role in progress."]
         mock_meta = [{
-            "model": "llama3-8b-8192",
+            "model": settings.groq_model,
             "usage": {
                 "prompt_tokens": 150,
                 "completion_tokens": 35,

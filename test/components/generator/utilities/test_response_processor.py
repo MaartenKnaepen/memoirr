@@ -4,7 +4,7 @@ Tests response parsing, metadata extraction, and formatting from Groq API respon
 """
 
 import pytest
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock
 
 from haystack.dataclasses import Document
 from src.components.generator.utilities.groq_generator.response_processor import (
@@ -16,6 +16,7 @@ from src.components.generator.utilities.groq_generator.response_processor import
     _extract_time_range,
     _extract_speakers,
 )
+
 
 
 class TestResponseProcessor:
@@ -50,8 +51,12 @@ class TestResponseProcessor:
 
     def test_process_groq_response_single_choice(self):
         """Test processing response with single choice."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         response = self.create_mock_groq_response()
-        model = "llama3-8b-8192"
+        model = settings.groq_model
         query = "What did the character say?"
         documents = [
             Document(
@@ -81,6 +86,10 @@ class TestResponseProcessor:
 
     def test_process_groq_response_multiple_choices(self):
         """Test processing response with multiple choices."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         choices = [
             MagicMock(
                 message=MagicMock(content="First response option."),
@@ -98,7 +107,7 @@ class TestResponseProcessor:
         
         replies, meta = process_groq_response(
             response=response,
-            model="llama3-8b-8192",
+            model=settings.groq_model,
             query="test query",
             documents=[],
             generation_params={}
@@ -114,11 +123,15 @@ class TestResponseProcessor:
 
     def test_process_groq_response_no_choices(self):
         """Test handling response with no choices."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         response = self.create_mock_groq_response(choices=[])
         
         replies, meta = process_groq_response(
             response=response,
-            model="llama3-8b-8192",
+            model=settings.groq_model,
             query="test query",
             documents=[],
             generation_params={}
@@ -129,6 +142,10 @@ class TestResponseProcessor:
 
     def test_process_groq_response_invalid_choice(self):
         """Test handling response with invalid choice structure."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         # Choice with missing message content
         bad_choice = MagicMock()
         bad_choice.message = MagicMock()
@@ -145,7 +162,7 @@ class TestResponseProcessor:
         
         replies, meta = process_groq_response(
             response=response,
-            model="llama3-8b-8192",
+            model=settings.groq_model,
             query="test query",
             documents=[],
             generation_params={}
@@ -177,6 +194,10 @@ class TestResponseProcessor:
 
     def test_build_reply_metadata_complete(self):
         """Test building metadata with all available information."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         choice = MagicMock()
         choice.finish_reason = "stop"
         choice.index = 0
@@ -202,13 +223,13 @@ class TestResponseProcessor:
             choice=choice,
             choice_index=0,
             response=response,
-            model="llama3-8b-8192",
+            model=settings.groq_model,
             query="test query",
             documents=documents,
             generation_params={"temperature": 0.7}
         )
         
-        assert meta["model"] == "llama3-8b-8192"
+        assert meta["model"] == settings.groq_model
         assert meta["finish_reason"] == "stop"
         assert meta["query"] == "test query"
         assert meta["document_count"] == 1
@@ -301,9 +322,13 @@ class TestResponseProcessor:
 
     def test_format_reply_for_display(self):
         """Test formatting reply for user display."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         reply = "This is the generated answer to your question."
         meta = {
-            "model": "llama3-8b-8192",
+            "model": settings.groq_model,
             "finish_reason": "stop",
             "usage": {
                 "prompt_tokens": 150,
@@ -327,7 +352,7 @@ class TestResponseProcessor:
         display = format_reply_for_display(reply, meta)
         
         assert display["answer"] == reply
-        assert display["model"] == "llama3-8b-8192"
+        assert display["model"] == settings.groq_model
         assert display["sources_used"] == 2
         assert display["token_usage"]["total"] == 175
         assert display["completion_status"] == "stop"
@@ -342,9 +367,13 @@ class TestResponseProcessor:
 
     def test_format_reply_for_display_length_warning(self):
         """Test that length truncation warning is added."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         reply = "Truncated response"
         meta = {
-            "model": "llama3-8b-8192",
+            "model": settings.groq_model,
             "finish_reason": "length",
             "context_sources": []
         }
@@ -357,6 +386,10 @@ class TestResponseProcessor:
 
     def test_process_groq_response_handles_none_choices_gracefully(self):
         """Test that None choices are handled gracefully without raising errors."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         response = MagicMock()
         response.choices = None
         response.id = "test_123"
@@ -364,7 +397,7 @@ class TestResponseProcessor:
         # Should return empty results instead of raising
         replies, meta = process_groq_response(
             response=response,
-            model="llama3-8b-8192",
+            model=settings.groq_model,
             query="test query",
             documents=[],
             generation_params={}

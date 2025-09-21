@@ -10,6 +10,7 @@ from unittest.mock import patch, MagicMock
 from haystack import Pipeline
 from haystack.dataclasses import Document
 from src.pipelines.rag_pipeline import build_rag_pipeline, RAGPipeline
+from src.core.config import get_settings
 
 
 class TestRAGPipelineIntegration:
@@ -75,6 +76,9 @@ class TestRAGPipelineIntegration:
 
     def test_end_to_end_rag_query_character_analysis(self):
         """Test complete RAG flow for character analysis query."""
+        # Get actual settings to use in mock data
+        settings = get_settings()
+        
         mock_documents = self.create_mock_subtitle_documents()
         
         # Mock the entire RAG pipeline execution
@@ -83,7 +87,7 @@ class TestRAGPipelineIntegration:
                 "retriever": {"documents": mock_documents},
                 "generator": {
                     "replies": ["Tony Stark demonstrates a strong ethical stance on technology."],
-                    "meta": [{"model": "llama3-8b-8192", "usage": {"total_tokens": 100}}]
+                    "meta": [{"model": settings.groq_model, "usage": {"total_tokens": 100}}]
                 },
                 "summary": {
                     "query": "How do Tony Stark and Bruce Banner view technology and responsibility?",
@@ -123,6 +127,10 @@ class TestRAGPipelineIntegration:
 
     def test_end_to_end_rag_query_quote_finding(self):
         """Test complete RAG flow for quote finding."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         # Create documents with specific quote
         quote_documents = [
             Document(
@@ -164,7 +172,7 @@ class TestRAGPipelineIntegration:
             "generator": {
                 "replies": [mock_groq_response.choices[0].message.content],
                 "meta": [{
-                    "model": "llama3-8b-8192",
+                    "model": settings.groq_model,
                     "usage": {
                         "prompt_tokens": mock_groq_response.usage.prompt_tokens,
                         "completion_tokens": mock_groq_response.usage.completion_tokens,
@@ -186,7 +194,7 @@ class TestRAGPipelineIntegration:
                         qdrant_url="http://localhost:6300",
                         qdrant_collection="test_collection",
                         qdrant_wait_result=True,
-                        groq_model="llama3-8b-8192",
+                        groq_model=settings.groq_model,
                         groq_system_prompt_template="default_system.j2",
                         groq_max_tokens=1024,
                         groq_temperature=0.7,
@@ -221,6 +229,10 @@ class TestRAGPipelineIntegration:
 
     def test_end_to_end_rag_query_timeline_analysis(self):
         """Test complete RAG flow for timeline analysis."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         timeline_documents = [
             Document(
                 content="The journey begins as we see our hero preparing for the mission.",
@@ -263,7 +275,7 @@ class TestRAGPipelineIntegration:
             "generator": {
                 "replies": [mock_groq_response.choices[0].message.content],
                 "meta": [{
-                    "model": "llama3-8b-8192",
+                    "model": settings.groq_model,
                     "usage": {
                         "prompt_tokens": mock_groq_response.usage.prompt_tokens,
                         "completion_tokens": mock_groq_response.usage.completion_tokens,
@@ -285,7 +297,7 @@ class TestRAGPipelineIntegration:
                         qdrant_url="http://localhost:6300",
                         qdrant_collection="test_collection",
                         qdrant_wait_result=True,
-                        groq_model="llama3-8b-8192",
+                        groq_model=settings.groq_model,
                         groq_system_prompt_template="default_system.j2",
                         groq_max_tokens=1024,
                         groq_temperature=0.7,
@@ -319,6 +331,10 @@ class TestRAGPipelineIntegration:
 
     def test_end_to_end_error_handling_no_documents_found(self):
         """Test pipeline behavior when no documents are retrieved."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         mock_groq_response = self.create_mock_groq_response(
             "I don't have enough context to answer that question based on the provided subtitles."
         )
@@ -333,7 +349,7 @@ class TestRAGPipelineIntegration:
             "generator": {
                 "replies": [mock_groq_response.choices[0].message.content],
                 "meta": [{
-                    "model": "llama3-8b-8192",
+                    "model": settings.groq_model,
                     "usage": {
                         "prompt_tokens": mock_groq_response.usage.prompt_tokens,
                         "completion_tokens": mock_groq_response.usage.completion_tokens,
@@ -362,6 +378,10 @@ class TestRAGPipelineIntegration:
 
     def test_pipeline_component_validation(self):
         """Test that pipeline validation works correctly."""
+        # Get actual settings to use in test
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         from src.pipelines.utilities.rag_pipeline.orchestrate_rag_query import validate_rag_pipeline
 
         # Build a real pipeline and validate it
@@ -374,7 +394,7 @@ class TestRAGPipelineIntegration:
                     qdrant_url="http://localhost:6300",
                     qdrant_collection="test_collection",
                     qdrant_wait_result=True,
-                    groq_model="llama3-8b-8192",
+                    groq_model=settings.groq_model,
                     groq_system_prompt_template="default_system.j2",
                     groq_max_tokens=1024,
                     groq_temperature=0.7,

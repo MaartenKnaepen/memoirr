@@ -36,8 +36,12 @@ class TestOrchestrateRAGQuery:
         ]
 
         mock_replies = ["Based on the context, the characters discuss responsible technology use and innovation."]
+        # Get actual settings to use in mock data
+        from src.core.config import get_settings
+        settings = get_settings()
+        
         mock_meta = [{
-            "model": "llama3-8b-8192",
+            "model": settings.groq_model,
             "usage": {
                 "prompt_tokens": 150,
                 "completion_tokens": 35,

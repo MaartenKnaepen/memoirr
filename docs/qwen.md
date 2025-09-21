@@ -297,3 +297,196 @@ class MyComponent:
 ```
 
 **Remember**: Haystack's type system is strict. Even semantically identical types must be syntactically identical for pipeline connections to work.
+
+---
+
+### **7. Context7 MCP Server Best Practices for Code Development**
+
+**⚠️ ESSENTIAL for AI assistants using MCP tools in coding workflows ⚠️**
+
+#### **Philosophy: Smart Tool Usage for Efficient Development**
+
+The Context7 MCP server provides powerful tools for workspace interaction, but using them efficiently requires strategic thinking. Follow these practices to minimize iterations and maximize code quality.
+
+#### **🎯 Core Principles**
+
+1. **Plan Before Acting**: Understand the problem completely before making changes
+2. **Batch Operations**: Use simultaneous tool calls when possible
+3. **Target Testing**: Only test relevant components, not the entire codebase
+4. **Clean as You Go**: Remove temporary files created during development
+
+#### **📋 Pre-Development Analysis Workflow**
+
+**Before writing any code:**
+
+1. **Explore the workspace structure**
+   ```python
+   # Use expand_folder to understand project layout
+   expand_folder("src/")
+   expand_folder("test/")
+   ```
+
+2. **Read existing patterns and conventions**
+   ```python
+   # Check for local guidelines
+   open_files(["AGENTS.md", "AGENTS.local.md", "README.md"])
+   ```
+
+3. **Understand the codebase context**
+   ```python
+   # Look at similar existing components
+   grep(content_pattern="class.*Component", path_glob="src/components/**/*.py")
+   ```
+
+#### **🔧 Efficient Code Investigation**
+
+**Use targeted exploration:**
+
+```python
+# ✅ GOOD: Simultaneous investigation
+open_files([
+    "src/components/target_component.py",
+    "test/components/test_target_component.py",
+    "src/core/config.py"
+])
+
+# ❌ AVOID: Sequential single-file opens
+open_files(["src/components/target_component.py"])
+open_files(["test/components/test_target_component.py"])  # Wasteful iteration
+```
+
+**Expand code strategically:**
+
+```python
+# ✅ GOOD: Expand specific functions you need to understand
+expand_code_chunks(
+    file_path="src/components/large_file.py",
+    patterns=["def target_function", "class TargetClass"]
+)
+
+# ❌ AVOID: Opening entire large files if you only need specific parts
+open_files(["src/components/large_file.py"])  # May show collapsed view
+```
+
+#### **⚡ Development Best Practices**
+
+**1. Simultaneous Operations**
+```python
+# ✅ EXCELLENT: Make related changes together
+find_and_replace_code(file_path="file1.py", find="old", replace="new")
+find_and_replace_code(file_path="file2.py", find="old", replace="new")
+find_and_replace_code(file_path="file3.py", find="old", replace="new")
+```
+
+**2. Smart Testing Strategy**
+```python
+# ✅ GOOD: Test only what you changed
+bash("python -m pytest test/components/test_modified_component.py -v")
+
+# ❌ AVOID: Running entire test suite for small changes
+bash("python -m pytest")  # Wasteful unless doing major refactoring
+```
+
+**3. Incremental Verification**
+```python
+# ✅ GOOD: Verify changes step by step
+bash("python -c 'from src.components.new_component import NewComponent; print(\"Import successful\")'")
+bash("python -m pytest test/components/test_new_component.py::TestSpecificMethod -v")
+```
+
+#### **🧹 Cleanup and Organization**
+
+**Temporary File Management:**
+```python
+# ✅ ALWAYS: Prefix temporary files for easy cleanup
+create_file("tmp_rovodev_test_script.py", content="...")
+
+# At end of development:
+delete_file("tmp_rovodev_test_script.py")
+```
+
+**Documentation Updates:**
+```python
+# ✅ GOOD: Update documentation as you develop
+find_and_replace_code(
+    file_path="README.md",
+    find="## Components",
+    replace="## Components\n\n### NewComponent\nDescription of new component..."
+)
+```
+
+#### **🚫 Common Anti-Patterns to Avoid**
+
+**1. Excessive File Opening**
+```python
+# ❌ WASTEFUL: Don't re-open files you've already seen
+open_files(["config.py"])
+# ... make changes ...
+open_files(["config.py"])  # You already know the content!
+```
+
+**2. Redundant Exploration**
+```python
+# ❌ INEFFICIENT: Don't re-expand code you've already reviewed
+expand_code_chunks(file_path="file.py", patterns=["function_a"])
+# ... later in same session ...
+expand_code_chunks(file_path="file.py", patterns=["function_a"])  # Wasteful
+```
+
+**3. Unfocused Testing**
+```python
+# ❌ AVOID: Testing unrelated components for localized changes
+bash("python -m pytest test/")  # Too broad for a single component fix
+```
+
+#### **📊 Iteration Budget Guidelines**
+
+**Target iteration counts by task complexity:**
+
+- **Simple tasks** (bug fix, documentation): ~10 iterations
+- **Medium tasks** (new feature, refactoring): ~20 iterations  
+- **Complex tasks** (major changes, integrations): ~30 iterations
+
+**Optimization strategies:**
+- Use `grep` to find patterns before making changes
+- Batch multiple `find_and_replace_code` calls
+- Create helper scripts for repetitive tasks
+- Only test what's relevant to your changes
+
+#### **🎯 Example: Efficient Bug Fix Workflow**
+
+```python
+# 1. Investigate the issue (1-2 iterations)
+grep(content_pattern="error_pattern", path_glob="**/*.py")
+open_files(["src/problematic_file.py", "test/test_problematic_file.py"])
+
+# 2. Make the fix (1 iteration)
+find_and_replace_code(
+    file_path="src/problematic_file.py",
+    find="buggy_code",
+    replace="fixed_code"
+)
+
+# 3. Test the fix (1 iteration)
+bash("python -m pytest test/test_problematic_file.py::test_specific_case -v")
+
+# 4. Update related files if needed (1 iteration)
+find_and_replace_code(
+    file_path="docs/api.md",
+    find="old_behavior_description",
+    replace="new_behavior_description"
+)
+```
+
+**Total: 4-5 iterations for a complete bug fix cycle**
+
+#### **🏆 Success Metrics**
+
+**You're using MCP tools efficiently when:**
+- You complete tasks within expected iteration budgets
+- You make simultaneous related changes rather than sequential ones
+- You test only what you've modified
+- You clean up temporary files
+- You understand the codebase before making changes
+
+**Remember**: The goal is not to minimize tool calls, but to make each tool call as valuable and purposeful as possible.
