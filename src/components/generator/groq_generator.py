@@ -72,7 +72,7 @@ class GroqGenerator:
             component="groq_generator"
         )
 
-    @component.output_types(replies=List[str], meta=List[Dict[str, Any]])
+    @component.output_types(replies=List[str], meta=List[Dict[str, Any]], documents=List[Document])
     def run(
         self, 
         query: str, 
@@ -179,4 +179,4 @@ class GroqGenerator:
                 component="groq_generator"
             )
 
-            return {"replies": replies, "meta": meta}
+            return {"replies": replies, "meta": meta, "documents": documents or []}

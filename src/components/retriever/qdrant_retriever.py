@@ -56,17 +56,22 @@ class QdrantRetriever:
         self.filters = filters or {}
 
         # Initialize Qdrant document store with same configuration as writer
-        self._document_store = QdrantDocumentStore(
+        kwargs = dict(
             url=settings.qdrant_url,
             index=settings.qdrant_collection,
             return_embedding=self.return_embedding,
             wait_result_from_api=settings.qdrant_wait_result,
         )
+        embedding_dimension = getattr(settings, "embedding_dimension", None)
+        if embedding_dimension is not None:
+            kwargs["embedding_dim"] = embedding_dimension
+        self._document_store = QdrantDocumentStore(**kwargs)
 
         self._logger.info(
             "QdrantRetriever initialized successfully",
             qdrant_url=settings.qdrant_url,
             collection_name=settings.qdrant_collection,
+            embedding_dimension=embedding_dimension,
             top_k=self.top_k,
             score_threshold=self.score_threshold,
             return_embedding=self.return_embedding,
