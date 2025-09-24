@@ -1,77 +1,189 @@
-### **Memoirr: Python Coding Standards & Architectural Guide**
+### **LLM-Optimized Memoirr Coding Standards**
 
-This document outlines the style guides, architectural principles, and best practices to be followed throughout the development of the Memoirr project. The primary goals of these standards are to ensure the codebase is **Readable, Maintainable, Modular, and Extensible.** Adherence to these principles is mandatory for all new code.
+## **Quick Reference for LLMs**
 
-### **1. Code Style & Formatting (The "Look and Feel")**
+**When implementing code:**
+1. Use functional approach → Pure functions, immutable data
+2. Follow repository structure → `src/components/type/component.py`
+3. Add comprehensive logging → Use `LoggedOperation` for timing
+4. **For tests:** → **Always refer to `docs/testing_guide.md`**
 
-The foundation of readable code is consistent style.
+## **Critical Rules**
 
-1.  **Linter & Formatter:**
-    *   **Tooling:** We will use **Ruff** for both linting and formatting. It is incredibly fast and integrates the functionality of dozens of tools (like Black, isort, Flake8) into one.
-    *   **Configuration:** A `pyproject.toml` or `ruff.toml` file will be configured at the root of the project. It will enforce a line length of **88 characters**, automatically sort imports, and enforce a strict set of linting rules.
-    *   **Workflow:** Code should be automatically formatted on save in the developer's IDE. A pre-commit hook can be configured to run Ruff before any code is committed to the repository.
+| Aspect | Rule | Example |
+|--------|------|---------|
+| Functions | Pure functions only | No side effects, predictable outputs |
+| Imports | Absolute imports | `from src.core.config import get_settings` |
+| Structure | Component-based | `src/components/chunker/semantic_chunker.py` |
+| Testing | Use testing guide | See `docs/testing_guide.md` for patterns |
+| Logging | LoggedOperation | All major operations must be logged |
 
-2.  **Naming Conventions:**
-    *   **`snake_case`:** For all variables, functions, methods, and modules (e.g., `media_processor.py`, `def process_media()`).
-    *   **`PascalCase`:** For all classes (e.g., `PlexFetcher`, `Settings`).
-    *   **`UPPER_SNAKE_CASE`:** For constants (e.g., `VECTOR_SIZE = 384`).
-    *   **Clarity over Brevity:** Variable names should be descriptive. `def process_media_file(file_path: str)` is better than `def proc(fpath)`.
+## **Code Style Templates**
 
-3.  **Type Hinting:**
-    *   **Mandatory:** All function and method signatures **must** include type hints for all arguments and the return value.
-    *   **Standard:** Use standard types from the `typing` module (`List`, `Dict`, `Optional`, `Tuple`).
-    *   **Benefit:** Type hints are critical for maintainability, IDE support, and static analysis. They serve as a form of documentation and make the code's intent clear.
+### **Naming Convention Algorithm:**
+```
+IF variable/function/module → snake_case
+IF class → PascalCase  
+IF constant → UPPER_SNAKE_CASE
+```
 
-4.  **Docstrings:**
-    *   **Mandatory:** Every public module, class, and function must have a docstring.
-    *   **Format:** We will use the **Google Python Style Guide** for docstrings. It is readable and well-supported by documentation generators.
-    ```python
-    def my_function(arg1: int, arg2: str) -> bool:
-        """Summarizes what this function does.
+### **Function Template:**
+```python
+def function_name(arg1: Type1, arg2: Type2) -> ReturnType:
+    """Brief description.
+    
+    Args:
+        arg1: Description.
+        arg2: Description.
+        
+    Returns:
+        Description of return value.
+    """
+    logger = get_logger(__name__)
+    
+    with LoggedOperation("operation_name", logger) as op:
+        # Implementation
+        result = process_data(arg1, arg2)
+        
+        op.add_context(processed_items=len(result))
+        return result
+```
 
-        A more detailed explanation of the function's behavior,
-        its side effects, and any complex logic.
+### **Import Template:**
+```python
+# Standard library
+from typing import Dict, List, Optional
 
-        Args:
-            arg1: Description of the first argument.
-            arg2: Description of the second argument.
+# Third party
+from haystack import Pipeline, Document
 
-        Returns:
-            A boolean indicating success or failure.
-        """
-        # ... function code ...
-    ```
-
----
-
-### **2. Architectural Principles (The "Philosophy")**
-
-These are the high-level rules that guide how we structure the application.
-
-1.  **Modularity & Single Responsibility Principle (SRP):**
-    *   **Rule:** Every file (module) and every class should have one, and only one, reason to change.
-    *   **Implementation:**
-        *   **`core/`:** Contains project-wide, reusable, and abstract logic (e.g., `config.py`, `hardware.py`). These files know nothing about Plex or pictures.
-        *   **`components/`:** Contains our custom, specialized Haystack components. Each file is one component (e.g., `plex_fetcher.py`, `chonky_splitter.py`). A component's job is to perform one specific step in a pipeline.
-        *   **`pipelines/`:** Contains the orchestration logic. These files import components and wire them together to form a `Pipeline` object.
-        *   **`ui.py`:** Contains only the code related to the Gradio user interface. It should know as little as possible about the internal workings of the pipelines it calls.
-
-2.  **Don't Repeat Yourself (DRY):**
-    *   **Rule:** If you find yourself writing the same block of code in two or more places, abstract it into a function or a class.
-    *   **Implementation:**
-        *   **Factories:** We use factory functions like `get_document_store()` and `get_groq_generator()`. This ensures that these critical objects are always instantiated in the exact same way everywhere in the application, using the central configuration.
-        *   **Shared Utilities:** Common, pure functions (e.g., a function to clean text) should be placed in a `utils.py` file to be imported where needed.
-
-3.  **Dependency Inversion & Abstraction (The Key to Reusability):**
-    *   **Rule:** Our core logic should not depend on concrete implementations; it should depend on abstractions. This is the most important principle for making the embedding and storage reusable.
-    *   **Implementation:**
-        *   **Haystack is our Abstraction Layer:** The primary reason we use Haystack is that it provides these abstractions. Our `indexing_pipeline` does not know it is talking to `PlexFetcher`. It just knows it's talking to a component that *produces* `Document` objects.
-        *   **Designing for the Future:** When we build the "Picture Module," we will not change the core indexing pipeline. We will create a **new pipeline**, `picture_indexing_pipeline.py`. This new pipeline will reuse the same `ChonkySplitter` (if we're chunking VLM descriptions), the same `FastembedDocumentEmbedder`, and the same `QdrantDocumentStore` writer component.
-        *   **The `Document` is our Universal Data Format:** The Haystack `Document` object (with its `content` and `meta` fields) is the standardized "shipping container" for data in our system. Any future data source (PDFs, web pages) must have a "Fetcher" component whose job is to transform that source data into this standard `Document` format. As long as it does that, it can be plugged into the rest of our reusable embedding and storage machinery.
+# Local imports
+from src.core.config import get_settings
+from src.core.logging_config import get_logger, LoggedOperation
+```
 
 ---
 
-### **3. Development Workflow & Best Practices**
+## **Repository Structure Algorithm**
+
+### **File Placement Rules:**
+```
+IF shared/reusable logic → src/core/
+IF pipeline component → src/components/type/component.py
+IF orchestration → src/pipelines/pipeline_name.py
+IF utilities for component → src/components/type/utilities/component/
+IF tests → test/ (mirror src/ structure)
+```
+
+### **Directory Structure Template:**
+```
+src/
+├── core/                    # Shared utilities
+│   ├── config.py           # Settings management
+│   ├── logging_config.py   # Logging setup
+│   └── model_utils.py      # Model utilities
+├── components/
+│   ├── chunker/
+│   │   ├── semantic_chunker.py
+│   │   └── utilities/semantic_chunker/
+│   ├── embedder/
+│   ├── generator/
+│   ├── preprocessor/
+│   ├── retriever/
+│   └── writer/
+└── pipelines/
+    ├── srt_to_qdrant.py
+    └── rag_pipeline.py
+```
+
+## **Testing Standards**
+
+### **CRITICAL: Always refer to `docs/testing_guide.md` for testing patterns**
+
+### **Test Structure Algorithm:**
+```
+IF testing function in module X → Mock imports as 'X.imported_function'
+IF testing with LoggedOperation → Add mock_instance.start_time = time.time() - 0.1
+IF testing pipeline results → Use explicit key validation
+IF need test templates → Use testing_guide.md copy-paste patterns
+```
+
+### **Quick Test Template:**
+```python
+@patch('src.module.imported_function')
+def test_function_name(mock_func):
+    # Arrange
+    mock_func.return_value = expected_value
+    
+    # Act  
+    result = function_under_test(input_data)
+    
+    # Assert
+    assert result.expected_field == expected_value
+    mock_func.assert_called_once()
+```
+
+---
+
+### **Pure Function Template:**
+```python
+def pure_function(input_data: InputType) -> OutputType:
+    """Pure function - no side effects, predictable output."""
+    # Only data transformation, no I/O
+    return transform_data(input_data)
+```
+
+### **Factory Pattern Template:**
+```python
+def get_component() -> ComponentType:
+    """Factory for consistent object creation."""
+    settings = get_settings()
+    return ComponentType(
+        param1=settings.param1,
+        param2=settings.param2
+    )
+```
+
+### **Haystack Component Template:**
+```python
+from haystack import component, Document
+from typing import List, Dict, Any
+
+@component
+class ComponentName:
+    """Component description."""
+    
+    @component.output_types(output_name=List[Document])
+    def run(self, input_data: Any) -> Dict[str, Any]:
+        """Component run method."""
+        from .utilities.component_name.orchestrate_operation import orchestrate_operation
+        
+        result = orchestrate_operation(input_data)
+        
+        return {"output_name": result}
+```
+
+---
+
+## **LLM Implementation Checklist**
+
+### **Before Implementing Any Feature:**
+1. ✅ Check repository structure → Use correct `src/components/type/` path
+2. ✅ Reference testing guide → See `docs/testing_guide.md` for test patterns  
+3. ✅ Use templates above → Copy-paste from this guide
+4. ✅ Add logging → Wrap operations in `LoggedOperation`
+5. ✅ Follow naming → `snake_case` functions, `PascalCase` classes
+
+### **Implementation Priority:**
+1. Use **templates** from this guide
+2. Follow **file placement rules** algorithm
+3. Add **comprehensive tests** using testing guide
+4. Ensure **pure functions** where possible
+5. Add **proper logging** and error handling
+
+---
+
+## **Legacy Documentation** (For Reference)
 
 1.  **Testing:**
     *   **Unit Tests are Non-Negotiable:** Every new piece of logic (a function or a class method) must be accompanied by a `pytest` unit test.
