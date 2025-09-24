@@ -30,6 +30,7 @@ class QdrantWriter:
         settings = get_settings()
         self._logger = get_logger(__name__)
         self._metrics = MetricsLogger(self._logger)
+        self._settings = settings
         kwargs = dict(
             url=settings.qdrant_url,
             index=settings.qdrant_collection,
@@ -153,3 +154,73 @@ class QdrantWriter:
                 self._metrics.counter("documents_skipped_total", skipped, component="qdrant_writer", reason="validation_failed")
             
             return {"stats": {"written": written_count, "skipped": skipped, "total": len(documents)}}
+
+    def clear_collection(self) -> bool:
+        """Clear all documents from the Qdrant collection.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            with LoggedOperation("collection_clearing", self._logger) as op:
+                self._logger.info(
+                    "Clearing Qdrant collection",
+                    collection_name=self._settings.qdrant_collection,
+                    component="qdrant_writer"
+                )
+                
+                # Delete all documents by using an empty filter (matches all)
+                self._store.delete_documents()
+                
+                op.add_context(collection_cleared=True)
+                
+                self._logger.info(
+                    "Qdrant collection cleared successfully",
+                    collection_name=self._settings.qdrant_collection,
+                    component="qdrant_writer"
+                )
+                
+                self._metrics.counter("collection_cleared_total", 1, component="qdrant_writer", status="success")
+                
+                return True
+                
+        except Exception as e:
+            self._logger.error(
+                "Failed to clear Qdrant collection",
+                collection_name=self._settings.qdrant_collection,
+                error=str(e),
+                error_type=type(e).__name__,
+                component="qdrant_writer"
+            )
+            
+            self._metrics.counter("collection_cleared_total", 1, component="qdrant_writer", status="failed")
+            
+            return False
+
+    def get_document_count(self) -> int:
+        """Get the current number of documents in the collection.
+        
+        Returns:
+            Number of documents in the collection, or -1 if error
+        """
+        try:
+            # Use the document store's count functionality if available
+            # This might need adjustment based on the actual QdrantDocumentStore API
+            count = self._store.count_documents()
+            
+            self._logger.debug(
+                "Retrieved document count",
+                document_count=count,
+                component="qdrant_writer"
+            )
+            
+            return count
+            
+        except Exception as e:
+            self._logger.error(
+                "Failed to get document count",
+                error=str(e),
+                error_type=type(e).__name__,
+                component="qdrant_writer"
+            )
+            return -1

@@ -223,20 +223,15 @@ def _process_pipeline_result(pipeline_result: Dict[str, Any], original_query: st
     logger = get_logger(__name__)
 
     try:
-        # Handle Haystack pipeline result structure - generator results contain both outputs
+        # Check for required components in pipeline result
+        if "retriever" not in pipeline_result:
+            raise RuntimeError("Missing retriever results from pipeline")
+            
         if "generator" not in pipeline_result:
             raise RuntimeError("Missing generator results from pipeline")
 
+        retriever_result = pipeline_result["retriever"]
         generator_result = pipeline_result["generator"]
-        
-        # Extract retriever info from generator output (which now includes documents)
-        if "retriever" in pipeline_result:
-            # Both outputs available (rare but possible)
-            retriever_result = pipeline_result["retriever"]
-        else:
-            # Extract retriever info from generator output (common case)
-            documents = generator_result.get("documents", [])
-            retriever_result = {"documents": documents}
 
         # Validate retriever results
         if "documents" not in retriever_result:
