@@ -13,6 +13,7 @@ from typing import List
 
 from haystack.core.component import component
 from haystack.components.embedders import SentenceTransformersTextEmbedder
+from tqdm import tqdm
 
 from src.core.config import get_settings
 from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger
@@ -70,15 +71,24 @@ class TextEmbedder:
             raise FileNotFoundError(f"Embedding model not found: {e}") from e
         # Initialize embedder with the resolved local path.
         # Prefer offline mode when supported by the installed Haystack version.
+        # Disable progress bars to avoid individual 1/1 progress bars
         try:
             self._embedder = SentenceTransformersTextEmbedder(
                 model=str(model_dir),
                 local_files_only=True,
+                show_progress_bar=False,
             )
         except TypeError:
             # Fallback for environments (or tests) where the underlying class signature
-            # doesn't accept `local_files_only` (e.g., monkeypatched fakes).
-            self._embedder = SentenceTransformersTextEmbedder(model=str(model_dir))
+            # doesn't accept `local_files_only` or `show_progress_bar` (e.g., monkeypatched fakes).
+            try:
+                self._embedder = SentenceTransformersTextEmbedder(
+                    model=str(model_dir),
+                    show_progress_bar=False,
+                )
+            except TypeError:
+                # Final fallback for minimal constructor
+                self._embedder = SentenceTransformersTextEmbedder(model=str(model_dir))
         # Warm up so that the first embedding call in a pipeline is not cold.
         self._embedder.warm_up()
         
@@ -135,35 +145,40 @@ class TextEmbedder:
             embeddings = []
             failed_count = 0
             
-            for i, single_text in enumerate(text):
-                try:
-                    result = self._embedder.run(single_text)
-                    embedding = result["embedding"]
-                    
-                    # Ensure the embedding is in the correct format (list of floats)
-                    if isinstance(embedding, list):
-                        embeddings.append(embedding)
-                    elif isinstance(embedding, (int, float)):
-                        # Handle single value embeddings
-                        embeddings.append([embedding])
-                    else:
-                        # Try to convert to list
-                        embeddings.append(list(embedding))
+            # Create a single progress bar for all embeddings
+            with tqdm(total=len(text), desc="Embedding texts", unit="text") as pbar:
+                for i, single_text in enumerate(text):
+                    try:
+                        result = self._embedder.run(single_text)
+                        embedding = result["embedding"]
                         
-                except Exception as e:
-                    # Log the error but continue processing other texts
-                    self._logger.warning(
-                        "Failed to embed individual text",
-                        text_index=i,
-                        text_length=len(single_text),
-                        error=str(e),
-                        error_type=type(e).__name__,
-                        fallback_action="using_zero_vector",
-                        component="embedder"
-                    )
-                    # Use zero vector as fallback
-                    embeddings.append([0.0] * self._embedding_dimension)
-                    failed_count += 1
+                        # Ensure the embedding is in the correct format (list of floats)
+                        if isinstance(embedding, list):
+                            embeddings.append(embedding)
+                        elif isinstance(embedding, (int, float)):
+                            # Handle single value embeddings
+                            embeddings.append([embedding])
+                        else:
+                            # Try to convert to list
+                            embeddings.append(list(embedding))
+                            
+                    except Exception as e:
+                        # Log the error but continue processing other texts
+                        self._logger.warning(
+                            "Failed to embed individual text",
+                            text_index=i,
+                            text_length=len(single_text),
+                            error=str(e),
+                            error_type=type(e).__name__,
+                            fallback_action="using_zero_vector",
+                            component="embedder"
+                        )
+                        # Use zero vector as fallback
+                        embeddings.append([0.0] * self._embedding_dimension)
+                        failed_count += 1
+                    
+                    # Update progress bar
+                    pbar.update(1)
             
             # Add final context and metrics
             successful_count = len(embeddings) - failed_count

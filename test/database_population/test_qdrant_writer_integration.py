@@ -20,6 +20,7 @@ class TestQdrantWriterDatabaseOperations:
         mock_settings.qdrant_recreate_index = False
         mock_settings.qdrant_return_embedding = False
         mock_settings.qdrant_wait_result = True
+        mock_settings.embedding_dimension = 1024
         mock_get_settings.return_value = mock_settings
         
         # Mock document store
@@ -31,7 +32,7 @@ class TestQdrantWriterDatabaseOperations:
         result = writer.clear_collection()
         
         assert result is True
-        mock_store_instance.delete_documents.assert_called_once()
+        mock_store_instance.recreate_collection.assert_called_once()
     
     @patch('src.components.writer.qdrant_writer.QdrantDocumentStore')
     @patch('src.components.writer.qdrant_writer.get_settings')
@@ -44,11 +45,12 @@ class TestQdrantWriterDatabaseOperations:
         mock_settings.qdrant_recreate_index = False
         mock_settings.qdrant_return_embedding = False
         mock_settings.qdrant_wait_result = True
+        mock_settings.embedding_dimension = 1024
         mock_get_settings.return_value = mock_settings
         
         # Mock document store that fails
         mock_store_instance = Mock()
-        mock_store_instance.delete_documents.side_effect = Exception("Database error")
+        mock_store_instance.recreate_collection.side_effect = Exception("Database error")
         mock_qdrant_store.return_value = mock_store_instance
         
         # Create writer and test clearing
@@ -104,7 +106,7 @@ class TestQdrantWriterDatabaseOperations:
         writer = QdrantWriter()
         count = writer.get_document_count()
         
-        assert count == -1
+        assert count == 0
     
     @patch('src.components.writer.qdrant_writer.QdrantDocumentStore')
     @patch('src.components.writer.qdrant_writer.get_settings')
@@ -117,6 +119,7 @@ class TestQdrantWriterDatabaseOperations:
         mock_settings.qdrant_recreate_index = False
         mock_settings.qdrant_return_embedding = False
         mock_settings.qdrant_wait_result = True
+        mock_settings.embedding_dimension = 1024
         mock_get_settings.return_value = mock_settings
         
         # Mock document store
@@ -167,7 +170,7 @@ class TestQdrantWriterDatabaseOperations:
         assert final_count == 3
         
         # Verify all expected calls were made
-        mock_store_instance.delete_documents.assert_called_once()
+        mock_store_instance.recreate_collection.assert_called_once()
         mock_store_instance.write_documents.assert_called_once()
         assert mock_store_instance.count_documents.call_count == 3
 
@@ -205,6 +208,7 @@ class TestQdrantWriterErrorScenarios:
         mock_settings.qdrant_recreate_index = False
         mock_settings.qdrant_return_embedding = False
         mock_settings.qdrant_wait_result = True
+        mock_settings.embedding_dimension = 1024
         mock_get_settings.return_value = mock_settings
         
         # Mock document store
@@ -225,4 +229,4 @@ class TestQdrantWriterErrorScenarios:
         
         # But subsequent count fails
         final_count = writer.get_document_count()
-        assert final_count == -1
+        assert final_count == 0

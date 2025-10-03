@@ -17,6 +17,7 @@ Outputs:
 from haystack import component
 from haystack.dataclasses.document import Document
 from haystack_integrations.document_stores.qdrant import QdrantDocumentStore
+from qdrant_client.http.models.models import Distance
 from typing import Any, Dict, List
 from src.core.config import get_settings
 from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger
@@ -156,27 +157,40 @@ class QdrantWriter:
             return {"stats": {"written": written_count, "skipped": skipped, "total": len(documents)}}
 
     def clear_collection(self) -> bool:
-        """Clear all documents from the Qdrant collection.
+        """Clear all documents from the Qdrant collection by recreating it.
         
         Returns:
             True if successful, False otherwise
         """
         try:
             with LoggedOperation("collection_clearing", self._logger) as op:
+                collection_name = self._settings.qdrant_collection
+                embedding_dim = getattr(self._settings, "embedding_dimension", 1024)
+                
                 self._logger.info(
-                    "Clearing Qdrant collection",
-                    collection_name=self._settings.qdrant_collection,
+                    "Clearing Qdrant collection via recreation",
+                    collection_name=collection_name,
+                    embedding_dimension=embedding_dim,
                     component="qdrant_writer"
                 )
                 
-                # Delete all documents by using an empty filter (matches all)
-                self._store.delete_documents()
+                # Recreate collection to clear all documents
+                self._store.recreate_collection(
+                    collection_name=collection_name,
+                    distance=Distance.COSINE,
+                    embedding_dim=embedding_dim
+                )
                 
-                op.add_context(collection_cleared=True)
+                op.add_context(
+                    collection_cleared=True,
+                    method="recreation",
+                    embedding_dimension=embedding_dim
+                )
                 
                 self._logger.info(
-                    "Qdrant collection cleared successfully",
-                    collection_name=self._settings.qdrant_collection,
+                    "Qdrant collection cleared successfully via recreation",
+                    collection_name=collection_name,
+                    embedding_dimension=embedding_dim,
                     component="qdrant_writer"
                 )
                 
@@ -201,11 +215,10 @@ class QdrantWriter:
         """Get the current number of documents in the collection.
         
         Returns:
-            Number of documents in the collection, or -1 if error
+            Number of documents in the collection, or 0 if error/empty
         """
         try:
-            # Use the document store's count functionality if available
-            # This might need adjustment based on the actual QdrantDocumentStore API
+            # Use the document store's count functionality
             count = self._store.count_documents()
             
             self._logger.debug(
@@ -217,10 +230,11 @@ class QdrantWriter:
             return count
             
         except Exception as e:
-            self._logger.error(
-                "Failed to get document count",
+            self._logger.warning(
+                "Failed to get document count, assuming empty collection",
                 error=str(e),
                 error_type=type(e).__name__,
                 component="qdrant_writer"
             )
-            return -1
+            # Return 0 instead of -1 for better handling in calling code
+            return 0

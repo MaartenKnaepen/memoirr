@@ -226,3 +226,4 @@ models/chunker/qwen3-embedding-0.6B/2_Normalize/config.json
 documentation/future_development.md
 documentation/qwen.md
 documentation/sprint_planning.md
+tests.ipynb
