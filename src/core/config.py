@@ -463,6 +463,17 @@ def get_settings(validate: bool = False) -> Settings:
     try:
         settings = Settings()  # type: ignore[call-arg]
         
+        # Configure PyTorch memory management on first settings load
+        try:
+            from src.core.memory_utils import configure_pytorch_memory
+            configure_pytorch_memory()
+        except ImportError:
+            # Memory utils not available during early initialization
+            pass
+        except Exception:
+            # Ignore memory configuration errors to prevent startup failures
+            pass
+        
         if validate:
             validation = validate_settings_comprehensive(settings)
             

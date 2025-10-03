@@ -7,6 +7,7 @@ of SRT files using utilities from the utilities folder.
 from typing import List
 
 from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger
+from src.core.memory_utils import clear_gpu_memory, log_memory_usage, memory_managed_operation
 from src.pipelines.srt_to_qdrant import build_srt_to_qdrant_pipeline
 
 from .utilities.batch_processor.types import BatchProcessingResult, ProcessingResult
@@ -81,13 +82,15 @@ def process_srt_directory(directory_path: str, overwrite: bool = False) -> Batch
                     component="batch_processor"
                 )
         
-        # Build the pipeline once for all files
+        # Build the pipeline once for all files with memory management
         try:
-            pipeline = build_srt_to_qdrant_pipeline()
-            logger.info(
-                "Pipeline built successfully for batch processing",
-                component="batch_processor"
-            )
+            with memory_managed_operation("pipeline_build", clear_before=True, clear_after=False):
+                pipeline = build_srt_to_qdrant_pipeline()
+                log_memory_usage("pipeline built", logger)
+                logger.info(
+                    "Pipeline built successfully for batch processing",
+                    component="batch_processor"
+                )
         except Exception as e:
             logger.error(
                 "Failed to build pipeline for batch processing",
@@ -111,8 +114,16 @@ def process_srt_directory(directory_path: str, overwrite: bool = False) -> Batch
                 component="batch_processor"
             )
             
+            # Clear GPU memory before processing each file to prevent accumulation
+            if i > 1:  # Don't clear before first file since we just built the pipeline
+                clear_gpu_memory()
+            
+            log_memory_usage(f"before file {i}/{len(srt_files)}", logger)
+            
             result = process_single_srt_file(file_path, pipeline)
             file_results.append(result)
+            
+            log_memory_usage(f"after file {i}/{len(srt_files)}", logger)
             
             if result.success:
                 successful_files += 1

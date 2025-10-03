@@ -28,6 +28,7 @@ from src.components.chunker.utilities.semantic_chunker.run_semantic_chunker impo
 )
 from src.components.chunker.utilities.semantic_chunker.types import ChunkerParams
 from src.core.config import get_settings
+from src.core.memory_utils import memory_managed_operation
 
 
 def orchestrate_semantic_chunking(
@@ -80,12 +81,47 @@ def orchestrate_semantic_chunking(
 
     settings = get_settings()
 
-    chunks = run_semantic_chunker(
-        text,
-        params,
-        model_name=settings.embedding_model_name,
-        device=settings.device,
-    )
+    # Use memory management for the semantic chunking operation
+    with memory_managed_operation("semantic_chunking", clear_before=False, clear_after=True):
+        try:
+            chunks = run_semantic_chunker(
+                text,
+                params,
+                model_name=settings.embedding_model_name,
+                device=settings.device,
+            )
+        except Exception as e:
+            # Check if this is a CUDA out of memory error
+            error_str = str(e).lower()
+            if "cuda out of memory" in error_str or "out of memory" in error_str:
+                # Try with CPU as fallback
+                try:
+                    from src.core.logging_config import get_logger
+                    logger = get_logger(__name__)
+                    logger.warning(
+                        "GPU out of memory during chunking, falling back to CPU",
+                        original_device=settings.device,
+                        error=str(e),
+                        component="chunker_fallback"
+                    )
+                    
+                    chunks = run_semantic_chunker(
+                        text,
+                        params,
+                        model_name=settings.embedding_model_name,
+                        device="cpu",
+                    )
+                    
+                    logger.info(
+                        "Successfully completed chunking with CPU fallback",
+                        component="chunker_fallback"
+                    )
+                except Exception as cpu_error:
+                    # If CPU fallback also fails, raise original error
+                    raise e from cpu_error
+            else:
+                # Not a memory error, re-raise original exception
+                raise
 
     mapped = [
         map_chunk_span_to_time(ch, spans, include_indices=include_caption_indices)

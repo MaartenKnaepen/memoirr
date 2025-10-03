@@ -21,6 +21,7 @@ from tqdm import tqdm
 from src.core.config import get_settings
 from src.core.logging_config import get_logger, LoggedOperation, MetricsLogger
 from src.core.model_utils import resolve_model_path
+from src.core.memory_utils import clear_gpu_memory, log_memory_usage, check_memory_availability
 
 
 @contextmanager
@@ -144,6 +145,18 @@ class TextEmbedder:
             Dict with a single key `embedding` containing the list of list[float] vectors.
         """
         with LoggedOperation("text_embedding", self._logger, input_texts=len(text)) as op:
+            # Log memory usage before embedding
+            log_memory_usage("before embedding", self._logger)
+            
+            # Check if we have sufficient memory for batch processing
+            memory_available = check_memory_availability()
+            if not memory_available:
+                self._logger.warning(
+                    "Low GPU memory detected, clearing cache before embedding",
+                    component="embedder"
+                )
+                clear_gpu_memory()
+            
             try:
                 # Convert texts to Documents for batch processing with DocumentEmbedder
                 documents = [Document(content=t) for t in text]
@@ -171,6 +184,9 @@ class TextEmbedder:
                     )
                     
                     self._metrics.counter("embeddings_generated_total", len(embeddings), component="embedder", mode="batch", status="success")
+                    
+                    # Log memory usage after successful batch processing
+                    log_memory_usage("after batch embedding", self._logger)
                     
                     return {"embedding": embeddings}
             except (TypeError, ValueError, AttributeError) as e:

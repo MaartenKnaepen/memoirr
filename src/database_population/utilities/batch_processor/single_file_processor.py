@@ -1,6 +1,7 @@
 """Single file processing utilities for batch processing."""
 
 from src.core.logging_config import get_logger, LoggedOperation
+from src.core.memory_utils import log_memory_usage
 from .types import ProcessingResult
 
 
@@ -61,13 +62,32 @@ def process_single_srt_file(file_path: str, pipeline) -> ProcessingResult:
             )
             
     except Exception as e:
-        logger.error(
-            "Failed to process SRT file",
-            file_path=file_path,
-            error=str(e),
-            error_type=type(e).__name__,
-            component="batch_processor"
-        )
+        # Log memory stats on error for debugging
+        log_memory_usage("error during file processing", logger)
+        
+        # Check if this is a memory-related error
+        error_str = str(e).lower()
+        is_memory_error = any(phrase in error_str for phrase in [
+            "cuda out of memory", "out of memory", "memory", "allocation"
+        ])
+        
+        if is_memory_error:
+            logger.error(
+                "Memory-related error processing SRT file",
+                file_path=file_path,
+                error=str(e),
+                error_type=type(e).__name__,
+                is_memory_error=True,
+                component="batch_processor"
+            )
+        else:
+            logger.error(
+                "Failed to process SRT file",
+                file_path=file_path,
+                error=str(e),
+                error_type=type(e).__name__,
+                component="batch_processor"
+            )
         
         return ProcessingResult(
             file_path=file_path,
