@@ -31,27 +31,20 @@ def test_end_to_end_pipeline_writes_embedded_chunks(monkeypatch):
     # Patch TextEmbedder to avoid loading a real model
     import src.components.embedder.text_embedder as embed_mod
 
-    class FakeEmbedder:
-        def __init__(self):
-            pass
-
-        def run(self, text: str):
-            return {"embedding": [float(len(text))]}
-
-        def warm_up(self):
-            pass
-
-    class FakeSTEmbedder:
+    class FakeDocumentEmbedder:
         def __init__(self, *args, **kwargs):
             pass
 
-        def run(self, text):
-            return {"embedding": [1.0]}
+        def run(self, documents):
+            # Return documents with embeddings based on content length
+            for doc in documents:
+                doc.embedding = [float(len(doc.content))]
+            return {"documents": documents}
 
         def warm_up(self):
             pass
 
-    monkeypatch.setattr(embed_mod, "SentenceTransformersTextEmbedder", lambda *a, **k: FakeEmbedder())
+    monkeypatch.setattr(embed_mod, "SentenceTransformersDocumentEmbedder", lambda *a, **k: FakeDocumentEmbedder())
     
     # Patch resolve_model_path in the embedder module where it's imported
     from src.components.embedder import text_embedder
