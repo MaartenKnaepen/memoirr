@@ -89,7 +89,7 @@ def orchestrate_rag_query(
                 component="rag_orchestrator"
             )
 
-            pipeline_result = pipeline.run(pipeline_inputs)
+            pipeline_result = pipeline.run(pipeline_inputs, include_outputs_from={'retriever', 'generator'})
 
             logger.debug(
                 "Pipeline execution completed",

@@ -61,17 +61,21 @@ class TextEmbedder:
     the model used by the semantic chunker to ensure consistent embedding spaces.
     
     Uses SentenceTransformersDocumentEmbedder for efficient batch processing.
+    
+    Automatically selects device based on context:
+    - CPU for retrieval operations (memory efficient, single queries)
+    - GPU for population operations (speed efficient, batch processing)
     """
 
-    def __init__(self) -> None:
+    def __init__(self, force_device: str = None, context: str = "auto") -> None:
         settings = get_settings()
         self._logger = get_logger(__name__)
         self._metrics = MetricsLogger(self._logger)
-        # The SentenceTransformersDocumentEmbedder accepts a `model` argument that can be
-        # a local folder path. We pass the Settings.embedding_model_name verbatim,
-        # expecting users to place the model files in `models/<EMBEDDING_MODEL_NAME>`.
-        # Device is managed internally by sentence-transformers; if needed, it can be
-        # configured via environment or future extension.
+        
+        # Smart device selection based on context
+        self._device = self._determine_device(force_device, context, settings)
+        self._context = context
+        
         self._model_name = settings.embedding_model_name
         # Use explicit embedding dimension from settings, with fallback only as last resort
         if settings.embedding_dimension is not None:
@@ -103,26 +107,35 @@ class TextEmbedder:
                 component="embedder"
             )
             raise FileNotFoundError(f"Embedding model not found: {e}") from e
-        # Initialize embedder with the resolved local path.
+        # Initialize embedder with the resolved local path and device
         # Use DocumentEmbedder for efficient batch processing of multiple texts
         # Disable progress bars to avoid individual 1/1 progress bars
         try:
             self._embedder = SentenceTransformersDocumentEmbedder(
                 model=str(model_dir),
+                device=self._device,
                 local_files_only=True,
                 show_progress_bar=False,
             )
         except TypeError:
             # Fallback for environments (or tests) where the underlying class signature
-            # doesn't accept `local_files_only` or `show_progress_bar` (e.g., monkeypatched fakes).
+            # doesn't accept `local_files_only`, `show_progress_bar`, or `device` (e.g., monkeypatched fakes).
             try:
                 self._embedder = SentenceTransformersDocumentEmbedder(
                     model=str(model_dir),
+                    device=self._device,
                     show_progress_bar=False,
                 )
             except TypeError:
-                # Final fallback for minimal constructor
-                self._embedder = SentenceTransformersDocumentEmbedder(model=str(model_dir))
+                try:
+                    # Try without device parameter
+                    self._embedder = SentenceTransformersDocumentEmbedder(
+                        model=str(model_dir),
+                        show_progress_bar=False,
+                    )
+                except TypeError:
+                    # Final fallback for minimal constructor
+                    self._embedder = SentenceTransformersDocumentEmbedder(model=str(model_dir))
         # Warm up so that the first embedding call in a pipeline is not cold.
         self._embedder.warm_up()
         
@@ -131,8 +144,110 @@ class TextEmbedder:
             model_name=self._model_name,
             embedding_dimension=self._embedding_dimension,
             model_path=str(model_dir),
+            device=self._device,
+            context=self._context,
             component="embedder"
         )
+
+    def _determine_device(self, force_device: str, context: str, settings) -> str:
+        """Determine the optimal device based on context and configuration.
+        
+        Args:
+            force_device: Explicit device override (e.g., "cpu", "cuda:0")
+            context: Usage context ("retrieval", "population", "auto")
+            settings: Application settings
+            
+        Returns:
+            Device string for sentence-transformers
+        """
+        # 1. Explicit override takes precedence
+        if force_device:
+            self._logger.info(
+                "Using explicitly forced device",
+                device=force_device,
+                context=context,
+                component="embedder"
+            )
+            return force_device
+        
+        # 2. Check environment variable override
+        if settings.device:
+            self._logger.info(
+                "Using device from configuration",
+                device=settings.device,
+                context=context,
+                component="embedder"
+            )
+            return settings.device
+            
+        # 3. Context-aware automatic selection
+        import torch
+        
+        if context == "retrieval":
+            # Always use CPU for retrieval to avoid CUDA memory issues
+            device = "cpu"
+            self._logger.info(
+                "Auto-selected CPU for retrieval context",
+                device=device,
+                reason="memory_efficiency",
+                component="embedder"
+            )
+        elif context == "population":
+            # Use GPU for population if available, else CPU
+            cuda_available = torch.cuda.is_available()  # Call ONCE and cache result
+            device = "cuda" if cuda_available else "cpu"
+            self._logger.info(
+                "Auto-selected device for population context",
+                device=device,
+                cuda_available=cuda_available,  # Use cached result
+                reason="batch_processing_speed",
+                component="embedder"
+            )
+        else:
+            # Auto context: detect from call stack
+            device = self._detect_context_from_stack()
+            self._logger.info(
+                "Auto-detected device from context",
+                device=device,
+                component="embedder"
+            )
+            
+        return device
+    
+    def _detect_context_from_stack(self) -> str:
+        """Detect if we're in a retrieval or population context from call stack.
+        
+        Returns:
+            Device string based on detected context
+        """
+        import inspect
+        import torch
+        
+        # Look through the call stack for context clues
+        frame = inspect.currentframe()
+        try:
+            while frame:
+                filename = frame.f_code.co_filename
+                function_name = frame.f_code.co_name
+                
+                # Check for retrieval context
+                if any(keyword in filename.lower() for keyword in ["retriev", "qdrant_retriever", "orchestrate_retrieval"]):
+                    self._context = "retrieval (detected)"
+                    return "cpu"  # Always CPU for retrieval
+                
+                # Check for population context  
+                if any(keyword in filename.lower() for keyword in ["population", "batch_processor", "writer", "database"]):
+                    self._context = "population (detected)"
+                    cuda_available = torch.cuda.is_available()  # Call ONCE and cache result
+                    return "cuda" if cuda_available else "cpu"
+                
+                frame = frame.f_back
+        finally:
+            del frame
+        
+        # Default fallback: use CPU to be safe
+        self._context = "unknown (safe default)"
+        return "cpu"
 
     @component.output_types(embedding=List[List[float]])
     def run(self, text: List[str]) -> dict[str, object]:  # type: ignore[override]

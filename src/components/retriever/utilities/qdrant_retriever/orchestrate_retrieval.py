@@ -58,14 +58,15 @@ def orchestrate_retrieval(
 
     with LoggedOperation("retrieval_orchestration", logger, query_length=len(query)) as op:
         try:
-            # Step 1: Embed the query
+            # Step 1: Embed the query using CPU for memory efficiency
             logger.debug(
                 "Starting query embedding",
                 query_preview=query[:50] + "..." if len(query) > 50 else query,
                 component="retrieval_orchestrator"
             )
 
-            embedder = TextEmbedder()
+            # Use CPU-only embedder for retrieval to avoid CUDA memory issues
+            embedder = TextEmbedder(context="retrieval")
             embedding_result = embedder.run(text=[query])
             query_embedding = embedding_result["embedding"][0]  # Get first (and only) embedding
 

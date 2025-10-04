@@ -88,7 +88,8 @@ def get_memory_stats() -> Dict[str, Any]:
     """
     try:
         import torch
-        if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+        cuda_available = torch.cuda.is_available()
+        if cuda_available and torch.cuda.device_count() > 0:
             # Convert bytes to MB for readability
             mb = 1024 ** 2
             device = torch.cuda.current_device()
