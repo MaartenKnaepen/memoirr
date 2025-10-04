@@ -1,0 +1,1 @@
+"""Tests for the Haystack-native RAG evaluation framework."""
