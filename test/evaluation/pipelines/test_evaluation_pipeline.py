@@ -22,7 +22,10 @@ from src.evaluation.pipelines.evaluation_pipeline import (
     build_evaluation_pipeline,
     run_faithfulness_evaluation,
     run_context_relevance_evaluation,
-    run_exact_match_evaluation
+    run_exact_match_evaluation,
+    run_document_recall_evaluation,
+    run_document_mrr_evaluation,
+    run_missing_features_evaluation
 )
 
 
@@ -126,8 +129,8 @@ class TestBuildEvaluationPipeline:
         
         # Verify LLM evaluator is configured correctly
         call_args = mock_llm_evaluator.call_args
-        assert call_args[1]["inputs"] == [("responses", List[str])]
-        assert call_args[1]["outputs"] == ["score"]
+        assert call_args[1]["inputs"] == [("responses", List[str]), ("queries", List[str])]
+        assert call_args[1]["outputs"] == ["speaker_score", "hybrid_score", "threading_score", "explanation"]
         assert "examples" in call_args[1]
         assert len(call_args[1]["examples"]) == 2  # Should have example responses
         
@@ -455,3 +458,91 @@ class TestEvaluationPipelineIntegration:
             # Expected - LLM not configured, but pipeline structure should be valid
             # We're mainly testing that components are properly wired
             assert "api" in str(e).lower() or "key" in str(e).lower() or "model" in str(e).lower()
+
+
+class TestNewEvaluationPipelineFunctions:
+    """Test class for the new document and missing features evaluation functions."""
+
+    def test_run_document_recall_evaluation_with_valid_inputs(self):
+        """Test document recall evaluation with valid inputs."""
+        # ARRANGE
+        mock_pipeline = Mock()
+        mock_pipeline.run.return_value = {"doc_recall": {"score": 0.85, "individual_scores": [1.0, 0.7]}}
+        
+        ground_truth_docs = [["doc1"], ["doc2", "doc3"]]
+        retrieved_docs = [["doc1", "doc4"], ["doc2"]]
+        
+        # ACT
+        result = run_document_recall_evaluation(mock_pipeline, ground_truth_docs, retrieved_docs)
+        
+        # ASSERT
+        mock_pipeline.run.assert_called_once_with({
+            "doc_recall": {
+                "ground_truth_documents": ground_truth_docs,
+                "retrieved_documents": retrieved_docs
+            }
+        })
+        assert result == {"doc_recall": {"score": 0.85, "individual_scores": [1.0, 0.7]}}
+
+    def test_run_document_mrr_evaluation_with_valid_inputs(self):
+        """Test document MRR evaluation with valid inputs."""
+        # ARRANGE
+        mock_pipeline = Mock()
+        mock_pipeline.run.return_value = {"doc_mrr": {"score": 0.75, "individual_scores": [1.0, 0.5]}}
+        
+        ground_truth_docs = [["doc1"], ["doc2"]]
+        retrieved_docs = [["doc1", "doc4"], ["doc4", "doc2"]]
+        
+        # ACT
+        result = run_document_mrr_evaluation(mock_pipeline, ground_truth_docs, retrieved_docs)
+        
+        # ASSERT
+        mock_pipeline.run.assert_called_once_with({
+            "doc_mrr": {
+                "ground_truth_documents": ground_truth_docs,
+                "retrieved_documents": retrieved_docs
+            }
+        })
+        assert result == {"doc_mrr": {"score": 0.75, "individual_scores": [1.0, 0.5]}}
+
+    def test_run_missing_features_evaluation_with_valid_inputs(self):
+        """Test missing features evaluation with valid inputs."""
+        # ARRANGE
+        mock_pipeline = Mock()
+        mock_pipeline.graph.nodes.return_value = ["missing_features", "other_component"]
+        mock_pipeline.run.return_value = {
+            "missing_features": {
+                "speaker_score": 0.2,
+                "hybrid_score": 0.0,
+                "threading_score": 0.1,
+                "explanation": "Limited feature support detected"
+            }
+        }
+        
+        responses = ["Gandalf mentioned the ring"]
+        queries = ["Who talked about the ring?"]
+        
+        # ACT
+        result = run_missing_features_evaluation(mock_pipeline, responses, queries)
+        
+        # ASSERT
+        mock_pipeline.run.assert_called_once_with({
+            "missing_features": {
+                "responses": responses,
+                "queries": queries
+            }
+        })
+        assert result["missing_features"]["speaker_score"] == 0.2
+
+    def test_run_missing_features_evaluation_raises_error_when_component_missing(self):
+        """Test that missing features evaluation raises error when component not in pipeline."""
+        # ARRANGE
+        mock_pipeline = Mock()
+        mock_pipeline.graph.nodes.return_value = ["faithfulness", "context_relevance"]
+        
+        responses = ["Some response"]
+        queries = ["Some query"]
+        
+        # ACT & ASSERT
+        with pytest.raises(ValueError, match="Pipeline does not contain missing_features component"):
+            run_missing_features_evaluation(mock_pipeline, responses, queries)

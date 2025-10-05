@@ -163,7 +163,7 @@ class TestHaystackRAGEvaluator:
                 assert error_call_args["error_type"] == "RuntimeError"
                 assert error_call_args["component"] == "haystack_evaluator"
 
-    def test_evaluate_faithfulness_baseline_placeholder(self, sample_evaluation_data_points):
+    def test_run_faithfulness_evaluation_placeholder(self, sample_evaluation_data_points):
         """Test faithfulness evaluation placeholder method."""
         # ARRANGE
         evaluator = HaystackRAGEvaluator()
@@ -171,7 +171,12 @@ class TestHaystackRAGEvaluator:
         
         with patch.object(evaluator, '_logger') as mock_logger:
             # ACT
-            result = evaluator.evaluate_faithfulness_baseline(test_data)
+            # Convert test data to new method signature format
+            questions = [dp.query for dp in test_data]
+            contexts = [dp.ground_truth_contexts for dp in test_data]
+            answers = [dp.expected_answer or "placeholder answer" for dp in test_data]
+            
+            result = evaluator.run_faithfulness_evaluation(questions, contexts, answers)
             
             # ASSERT
             assert result == 0.0  # Placeholder implementation
@@ -180,7 +185,7 @@ class TestHaystackRAGEvaluator:
                 component="haystack_evaluator"
             )
 
-    def test_evaluate_context_relevance_baseline_placeholder(self, sample_evaluation_data_points):
+    def test_run_context_relevance_evaluation_placeholder(self, sample_evaluation_data_points):
         """Test context relevance evaluation placeholder method."""
         # ARRANGE
         evaluator = HaystackRAGEvaluator()
@@ -188,7 +193,11 @@ class TestHaystackRAGEvaluator:
         
         with patch.object(evaluator, '_logger') as mock_logger:
             # ACT
-            result = evaluator.evaluate_context_relevance_baseline(test_data)
+            # Convert test data to new method signature format
+            questions = [dp.query for dp in test_data]
+            contexts = [dp.ground_truth_contexts for dp in test_data]
+            
+            result = evaluator.run_context_relevance_evaluation(questions, contexts)
             
             # ASSERT
             assert result == 0.0  # Placeholder implementation
@@ -197,7 +206,7 @@ class TestHaystackRAGEvaluator:
                 component="haystack_evaluator"
             )
 
-    def test_evaluate_exact_match_baseline_placeholder(self, sample_evaluation_data_points):
+    def test_run_exact_match_evaluation_placeholder(self, sample_evaluation_data_points):
         """Test exact match evaluation placeholder method."""
         # ARRANGE
         evaluator = HaystackRAGEvaluator()
@@ -205,7 +214,11 @@ class TestHaystackRAGEvaluator:
         
         with patch.object(evaluator, '_logger') as mock_logger:
             # ACT
-            result = evaluator.evaluate_exact_match_baseline(test_data)
+            # Convert test data to new method signature format
+            predicted_answers = [dp.expected_answer or "placeholder answer" for dp in test_data]
+            ground_truth = [dp.expected_answer or "ground truth answer" for dp in test_data]
+            
+            result = evaluator.run_exact_match_evaluation(predicted_answers, ground_truth)
             
             # ASSERT
             assert result == 0.0  # Placeholder implementation
@@ -214,7 +227,7 @@ class TestHaystackRAGEvaluator:
                 component="haystack_evaluator"
             )
 
-    def test_measure_latency_baseline_placeholder(self):
+    def test_measure_pipeline_latency_placeholder(self):
         """Test latency measurement placeholder method."""
         # ARRANGE
         evaluator = HaystackRAGEvaluator()
@@ -222,7 +235,10 @@ class TestHaystackRAGEvaluator:
         
         with patch.object(evaluator, '_logger') as mock_logger:
             # ACT
-            result = evaluator.measure_latency_baseline(test_queries)
+            # Mock RAG pipeline for new method signature
+            mock_rag_pipeline = Mock()
+            
+            result = evaluator.measure_pipeline_latency(mock_rag_pipeline, test_queries)
             
             # ASSERT
             assert isinstance(result, dict)
@@ -232,6 +248,51 @@ class TestHaystackRAGEvaluator:
             assert all(v == 0.0 for v in result.values())  # Placeholder values
             mock_logger.info.assert_called_with(
                 "Measuring pipeline latency",
+                component="haystack_evaluator"
+            )
+
+    def test_run_document_recall_evaluation_placeholder(self):
+        """Test document recall evaluation placeholder method."""
+        # ARRANGE
+        evaluator = HaystackRAGEvaluator()
+        retrieved_docs = [["doc1", "doc2"], ["doc3", "doc4"]]
+        relevant_docs = [["doc1", "doc5"], ["doc3", "doc6"]]
+        
+        with patch.object(evaluator, '_logger') as mock_logger:
+            # ACT
+            result = evaluator.run_document_recall_evaluation(retrieved_docs, relevant_docs)
+            
+            # ASSERT
+            assert result == 0.0  # Placeholder implementation
+            assert isinstance(result, float)
+            mock_logger.info.assert_called_with(
+                "Running document recall evaluation", 
+                component="haystack_evaluator"
+            )
+
+    def test_evaluate_rag_pipeline_placeholder(self):
+        """Test comprehensive RAG pipeline evaluation placeholder method."""
+        # ARRANGE
+        evaluator = HaystackRAGEvaluator()
+        mock_rag_pipeline = Mock()
+        
+        with patch.object(evaluator, '_logger') as mock_logger:
+            # ACT
+            result = evaluator.evaluate_rag_pipeline(mock_rag_pipeline)
+            
+            # ASSERT
+            assert isinstance(result, dict)
+            expected_keys = [
+                "faithfulness", "context_relevance", "exact_match", 
+                "document_recall", "avg_latency_ms", "p95_latency_ms", "p99_latency_ms"
+            ]
+            for key in expected_keys:
+                assert key in result
+                assert isinstance(result[key], (int, float))
+                assert result[key] >= 0.0, f"{key} should be non-negative, got {result[key]}"
+            
+            mock_logger.info.assert_called_with(
+                "Starting comprehensive RAG pipeline evaluation", 
                 component="haystack_evaluator"
             )
 

@@ -79,10 +79,11 @@ class HaystackRAGEvaluator:
             # test_data = self._generate_test_data(num_test_queries)
             
             # TODO: Run evaluations (Day 4 implementation)
-            # faithfulness_score = self.evaluate_faithfulness_baseline(test_data)
-            # context_relevance_score = self.evaluate_context_relevance_baseline(test_data)
-            # exact_match_score = self.evaluate_exact_match_baseline(test_data)
-            # latency_metrics = self.measure_latency_baseline(test_queries)
+            # faithfulness_score = self.run_faithfulness_evaluation(questions, contexts, answers)
+            # context_relevance_score = self.run_context_relevance_evaluation(questions, contexts)
+            # exact_match_score = self.run_exact_match_evaluation(predicted_answers, ground_truth)
+            # document_recall_score = self.run_document_recall_evaluation(retrieved_docs, relevant_docs)
+            # latency_metrics = self.measure_pipeline_latency(rag_pipeline, test_queries)
             
             # Placeholder results for sprint planning
             baseline_results = {
@@ -110,11 +111,13 @@ class HaystackRAGEvaluator:
             self._metrics.counter("baseline_evaluation_errors", 1)
             raise
     
-    def evaluate_faithfulness_baseline(self, test_data: List[EvaluationDataPoint]) -> float:
-        """Evaluate how faithful current answers are to retrieved context.
+    def run_faithfulness_evaluation(self, questions: List[str], contexts: List[List[str]], answers: List[str]) -> float:
+        """Evaluate how faithful answers are to retrieved context using Haystack's FaithfulnessEvaluator.
         
         Args:
-            test_data: List of evaluation data points with queries and contexts
+            questions: List of questions asked
+            contexts: List of context lists for each question
+            answers: List of generated answers
             
         Returns:
             Average faithfulness score (0.0 to 1.0)
@@ -123,11 +126,12 @@ class HaystackRAGEvaluator:
         self._logger.info("Running faithfulness evaluation", component="haystack_evaluator")
         return 0.0
     
-    def evaluate_context_relevance_baseline(self, test_data: List[EvaluationDataPoint]) -> float:
-        """Evaluate how relevant retrieved context is to queries.
+    def run_context_relevance_evaluation(self, questions: List[str], contexts: List[List[str]]) -> float:
+        """Evaluate how relevant retrieved context is to queries using Haystack's ContextRelevanceEvaluator.
         
         Args:
-            test_data: List of evaluation data points with queries and contexts
+            questions: List of questions asked
+            contexts: List of context lists for each question
             
         Returns:
             Average context relevance score (0.0 to 1.0)
@@ -136,11 +140,12 @@ class HaystackRAGEvaluator:
         self._logger.info("Running context relevance evaluation", component="haystack_evaluator")
         return 0.0
     
-    def evaluate_exact_match_baseline(self, test_data: List[EvaluationDataPoint]) -> float:
-        """Evaluate exact quote finding capabilities.
+    def run_exact_match_evaluation(self, predicted_answers: List[str], ground_truth: List[str]) -> float:
+        """Evaluate exact match accuracy using Haystack's AnswerExactMatchEvaluator.
         
         Args:
-            test_data: List of evaluation data points with expected answers
+            predicted_answers: List of predicted answers from the system
+            ground_truth: List of ground truth answers
             
         Returns:
             Exact match accuracy (0.0 to 1.0)
@@ -149,14 +154,54 @@ class HaystackRAGEvaluator:
         self._logger.info("Running exact match evaluation", component="haystack_evaluator")
         return 0.0
     
-    def measure_latency_baseline(self, test_queries: List[str]) -> Dict[str, float]:
-        """Measure current system performance.
+    def run_document_recall_evaluation(self, retrieved_docs: List[List[str]], relevant_docs: List[List[str]]) -> float:
+        """Evaluate document recall using Haystack's DocumentRecallEvaluator.
         
         Args:
-            test_queries: List of queries to measure latency for
+            retrieved_docs: List of retrieved document lists for each query
+            relevant_docs: List of relevant document lists for each query
             
         Returns:
-            Dictionary with latency statistics
+            Average document recall score (0.0 to 1.0)
+        """
+        # TODO: Implement document recall evaluation using DocumentRecallEvaluator
+        self._logger.info("Running document recall evaluation", component="haystack_evaluator")
+        return 0.0
+    
+    def evaluate_rag_pipeline(self, rag_pipeline) -> Dict[str, float]:
+        """Run comprehensive evaluation of a RAG pipeline using all available evaluators.
+        
+        Args:
+            rag_pipeline: RAG pipeline to evaluate
+            
+        Returns:
+            Dictionary containing all evaluation metrics
+        """
+        self._logger.info("Starting comprehensive RAG pipeline evaluation", component="haystack_evaluator")
+        
+        # TODO: Implement complete pipeline evaluation coordinating all individual evaluations
+        # This should generate test data and run all evaluation methods
+        results = {
+            "faithfulness": 0.0,
+            "context_relevance": 0.0,
+            "exact_match": 0.0,
+            "document_recall": 0.0,
+            "avg_latency_ms": 0.0,
+            "p95_latency_ms": 0.0,
+            "p99_latency_ms": 0.0
+        }
+        
+        return results
+    
+    def measure_pipeline_latency(self, rag_pipeline, queries: List[str]) -> Dict[str, float]:
+        """Measure pipeline performance and response times.
+        
+        Args:
+            rag_pipeline: RAG pipeline to measure
+            queries: List of queries to measure latency for
+            
+        Returns:
+            Dictionary with latency statistics (avg, p95, p99)
         """
         # TODO: Implement latency measurement
         self._logger.info("Measuring pipeline latency", component="haystack_evaluator")
