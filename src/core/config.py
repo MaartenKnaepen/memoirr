@@ -72,6 +72,27 @@ class Settings(BaseSettings):
         - GROQ_STREAM: bool; default False (whether to stream responses).
         - GROQ_SYSTEM_PROMPT_TEMPLATE: string; default "default_system.j2" (Jinja2 template file in src/prompts/).
         - GROQ_MAX_CONTEXT_LENGTH: int; default 4000 (maximum context length in characters).
+
+        V1 Multimodal configuration:
+        - TMDB_API_KEY: string; optional (API key for The Movie Database).
+        - TMDB_BASE_URL: string; default "https://api.themoviedb.org/3" (TMDB API base URL).
+        - RADARR_URL: string; optional (Radarr server URL).
+        - RADARR_API_KEY: string; optional (Radarr API key).
+        - PLEX_URL: string; optional (Plex server URL).
+        - PLEX_TOKEN: string; optional (Plex authentication token).
+        - SCENE_DETECT_THRESHOLD: float; default 27.0 (PySceneDetect threshold for scene changes).
+        - SCENE_MIN_DURATION_SEC: float; default 1.5 (minimum scene duration in seconds).
+        - SCENE_MERGE_THRESHOLD_SEC: float; default 5.0 (merge scenes shorter than this).
+        - KEYFRAMES_PER_SCENE: int; default 3 (number of keyframes to extract per scene).
+        - FACE_SIMILARITY_THRESHOLD: float; default 0.6 (clustering threshold for face recognition).
+        - FACE_MIN_CONFIDENCE: float; default 0.5 (minimum confidence for face detection).
+        - INSIGHTFACE_MODEL: string; default "buffalo_l" (InsightFace model name).
+        - VLM_MODEL_ID: string; default "Qwen/Qwen2.5-VL-3B-Instruct" (Vision-Language Model ID).
+        - VLM_QUANTIZATION_BITS: int; default 4 (quantization bits for VLM, 4 or 8).
+        - VLM_MAX_NEW_TOKENS: int; default 512 (max tokens for VLM generation).
+        - SPEAKER_CONFIDENCE_THRESHOLD: float; default 0.8 (confidence threshold for speaker attribution).
+        - SPEAKER_SLIDING_WINDOW: int; default 20 (number of dialogue lines for context window).
+        - SPEAKER_MODEL: string; default "llama-3.3-70b-versatile" (Groq model for speaker tagging).
     """
 
     embedding_model_name: str = Field(
@@ -147,6 +168,37 @@ class Settings(BaseSettings):
     groq_stream: bool = Field(default=False, alias="GROQ_STREAM")
     groq_system_prompt_template: str = Field(default="default_system.j2", alias="GROQ_SYSTEM_PROMPT_TEMPLATE")
     groq_max_context_length: int = Field(default=4000, alias="GROQ_MAX_CONTEXT_LENGTH")
+
+    # ============================================================================
+    # V1 Multimodal Settings
+    # ============================================================================
+
+    # Metadata API settings
+    tmdb_api_key: Optional[str] = Field(default=None, alias="TMDB_API_KEY")
+    tmdb_base_url: str = Field(default="https://api.themoviedb.org/3", alias="TMDB_BASE_URL")
+    radarr_url: Optional[str] = Field(default=None, alias="RADARR_URL")
+    radarr_api_key: Optional[str] = Field(default=None, alias="RADARR_API_KEY")
+    plex_url: Optional[str] = Field(default=None, alias="PLEX_URL")
+    plex_token: Optional[str] = Field(default=None, alias="PLEX_TOKEN")
+
+    # Vision pipeline settings
+    scene_detect_threshold: float = Field(default=27.0, alias="SCENE_DETECT_THRESHOLD")
+    scene_min_duration_sec: float = Field(default=1.5, alias="SCENE_MIN_DURATION_SEC")
+    scene_merge_threshold_sec: float = Field(default=5.0, alias="SCENE_MERGE_THRESHOLD_SEC")
+    keyframes_per_scene: int = Field(default=3, alias="KEYFRAMES_PER_SCENE")
+    face_similarity_threshold: float = Field(default=0.6, alias="FACE_SIMILARITY_THRESHOLD")
+    face_min_confidence: float = Field(default=0.5, alias="FACE_MIN_CONFIDENCE")
+
+    # Model paths and identifiers
+    insightface_model: str = Field(default="buffalo_l", alias="INSIGHTFACE_MODEL")
+    vlm_model_id: str = Field(default="Qwen/Qwen2.5-VL-3B-Instruct", alias="VLM_MODEL_ID")
+    vlm_quantization_bits: int = Field(default=4, alias="VLM_QUANTIZATION_BITS")
+    vlm_max_new_tokens: int = Field(default=512, alias="VLM_MAX_NEW_TOKENS")
+
+    # Speaker tagging settings
+    speaker_confidence_threshold: float = Field(default=0.8, alias="SPEAKER_CONFIDENCE_THRESHOLD")
+    speaker_sliding_window: int = Field(default=20, alias="SPEAKER_SLIDING_WINDOW")
+    speaker_model: str = Field(default="llama-3.3-70b-versatile", alias="SPEAKER_MODEL")
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="", extra="ignore")
 

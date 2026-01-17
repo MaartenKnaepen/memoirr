@@ -227,3 +227,5 @@ documentation/future_development.md
 documentation/qwen.md
 documentation/sprint_planning.md
 tests.ipynb
+.rovo-plan.md
+.env.example

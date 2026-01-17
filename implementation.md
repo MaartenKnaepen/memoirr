@@ -6,6 +6,18 @@
 **Architecture:** Sequential Pipeline (Metadata -> Vision -> Text -> Fusion).
 
 ---
+## 1. Model Bill of Materials (BOM)
+
+These are the specific models we will use. They are selected to fit within 8GB VRAM when run one at a time.
+
+| Role | Selected Model | Implementation | Resource Est. |
+| :--- | :--- | :--- | :--- |
+| **Visual Describer** | `Qwen/Qwen2.5-VL-3B-Instruct` | `transformers` + `bitsandbytes` (4-bit) | ~3.5 GB VRAM |
+| **Face Recognition** | `InsightFace (buffalo_l)` | `onnxruntime-gpu` | ~1.2 GB VRAM |
+| **Text Embedding** | `Qwen/Qwen3-embedding-0.6B` | `sentence-transformers` | ~0.6 GB VRAM |
+| **Speaker Tagging** | `Llama-3-8b` | **Groq API** (Cloud) | 0 GB VRAM |
+
+---
 
 ## 📅 Phase 1: Foundation (Infrastructure & Metadata)
 **Focus:** Configuration, Type Safety, and External APIs. No GPU required.
