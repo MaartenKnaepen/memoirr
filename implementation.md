@@ -17,6 +17,7 @@ These are the specific models we will use. They are selected to fit within 8GB V
 | **Text Embedding** | `Qwen/Qwen3-embedding-0.6B` | `sentence-transformers` | ~0.6 GB VRAM |
 | **Speaker Tagging** | `Llama-3-8b` | **Groq API** (Cloud) | 0 GB VRAM |
 
+
 ---
 
 ## 📅 Phase 1: Foundation (Infrastructure & Metadata)
