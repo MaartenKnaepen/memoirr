@@ -45,13 +45,18 @@ These are the specific models we will use. They are selected to fit within 8GB V
 
 - [ ] **Step 1.5: Plex Client**
     - **Goal:** Enable "Click to Play".
-    - **File:** `src/components/metadata/plex_client.py`
+    - **File:** `src/components/metadata/plex_client.py`/
     - **Scope:** Generate `plex://` deep links for specific timestamps.
 
 - [ ] **Step 1.6: Metadata Service Component**
     - **Goal:** Haystack component wrapping the above clients.
     - **File:** `src/components/metadata/metadata_service.py`
     - **Scope:** Orchestrate fetching metadata -> outputs `MovieMetadata` object.
+
+- [ ] **Step 1.7: Metadata Service Refinement (Plex-Only)**
+    - **Goal:** Simplify to "Plex-Only" architecture for deep-link support.
+    - **Files:** `src/components/metadata/metadata_service.py`, `src/components/metadata/utilities/metadata_service/orchestrate_metadata.py`
+    - **Scope:** Remove RadarrClient from MetadataService; Fail fast if file not in Plex; Update tests for new behavior.
 
 ---
 
